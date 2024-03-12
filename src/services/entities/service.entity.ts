@@ -7,7 +7,7 @@ export class Service extends AbstractEntity {
   @Column({ unique: true })
   name: string;
 
-  @Column({})
+  @Column({ nullable: true })
   unity: string;
 
   @Column({ default: 0 })

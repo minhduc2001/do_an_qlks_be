@@ -9,6 +9,9 @@ export class Room extends AbstractEntity {
   @Column()
   name: string;
 
+  @Column({ default: false })
+  is_booking: boolean;
+
   @ManyToOne(() => TypeRoom, (tr) => tr.rooms)
   type_room: TypeRoom;
 

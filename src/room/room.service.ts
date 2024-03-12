@@ -1,23 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Room } from './entities/room.entity';
+import { Repository } from 'typeorm';
+import { BaseService } from '@/base/service/base.service';
+import { BadExcetion } from '@/base/api/exception.reslover';
+import { ListRoomDto } from './dto/list-room.dto';
+import { PaginateConfig } from '@/base/service/paginate/paginate';
 
 @Injectable()
-export class RoomService {
-  create(createRoomDto: CreateRoomDto) {
-    return 'This action adds a new room';
+export class RoomService extends BaseService<Room> {
+  constructor(
+    @InjectRepository(Room)
+    protected readonly repository: Repository<Room>,
+  ) {
+    super(repository);
+  }
+  async create(payload: CreateRoomDto) {
+    const room = await this.repository.findOne({
+      where: { name: payload.name },
+    });
+    if (room) throw new BadExcetion({ message: 'Phong da ton tai' });
+
+    return this.repository.save(payload);
   }
 
-  findAll() {
-    return `This action returns all room`;
+  async findAll(query: ListRoomDto) {
+    const config: PaginateConfig<Room> = {
+      sortableColumns: ['id'],
+    };
+
+    return this.listWithPage(query, config);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} room`;
+  async findOne(id: number) {
+    const room = await this.repository.findOne({
+      where: { id },
+    });
+    if (!room) throw new BadExcetion({ message: 'Phong khong ton tai' });
+    return room;
   }
 
-  update(id: number, updateRoomDto: UpdateRoomDto) {
-    return `This action updates a #${id} room`;
+  async update(id: number, payload: UpdateRoomDto) {
+    const room = await this.findOne(id);
+    room.name = payload.name;
+    return room.save();
   }
 
   remove(id: number) {

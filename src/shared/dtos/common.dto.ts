@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { StringToArray } from '@base/decorators/common.decorator';
 
-export class ListDto {
+export abstract class ListDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsNumber()

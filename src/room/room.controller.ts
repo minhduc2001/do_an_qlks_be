@@ -1,3 +1,4 @@
+import { FeatureRoomService } from './feature_room.service';
 import {
   Controller,
   Get,
@@ -8,26 +9,56 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
-import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
-import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { TypeRoomService } from './type_room.service';
 import { CreateTypeRoomDto } from './dto/create-type_room.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { UpdateTypeRoomDto } from './dto/update-type_room.dto';
+import { ListTypeRoomDto } from './dto/list-type_room.dto';
+import { ListRoomDto } from './dto/list-room.dto';
+import { CreateRoomDto } from './dto/create-room.dto';
+import { UpdateRoomDto } from './dto/update-room.dto';
+import { ListDto } from '@/shared/dtos/common.dto';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Room')
 @Controller('room')
+@ApiBearerAuth()
 export class RoomController {
   constructor(
     private readonly roomService: RoomService,
     private readonly typeRoomService: TypeRoomService,
+    private readonly featureRoomService: FeatureRoomService,
   ) {}
+
+  @Get('get-room')
+  findRoom(@Query() query: ListRoomDto) {
+    return this.roomService.findAll(query);
+  }
+
+  @Post('create-room')
+  createRoom(@Body() payload: CreateRoomDto) {
+    return this.roomService.create(payload);
+  }
+
+  @Put(':id/update-room')
+  updateRoom(@Param('id') id: string, @Body() payload: UpdateRoomDto) {
+    return this.roomService.update(+id, payload);
+  }
+
+  @Get('get-feature-room')
+  @Public()
+  findFeatureRoom(@Query() query: ListDto) {
+    return this.featureRoomService.findAll(query);
+  }
 
   @Post()
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('files'))
+  @UseInterceptors(FilesInterceptor('files'))
   create(
     @Body() payload: CreateTypeRoomDto,
     @UploadedFile() files: Array<Express.Multer.File>,
@@ -39,22 +70,31 @@ export class RoomController {
   }
 
   @Get()
-  find() {
-    return this.roomService.findAll();
+  find(@Query() query: ListTypeRoomDto) {
+    return this.typeRoomService.findAll(query);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.roomService.findOne(+id);
+    return this.typeRoomService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomService.update(+id, updateRoomDto);
+  @Put(':id')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('files'))
+  update(
+    @Param('id') id: string,
+    @Body() payload: UpdateTypeRoomDto,
+    @UploadedFile() files: Array<Express.Multer.File>,
+  ) {
+    return this.typeRoomService.update(+id, {
+      ...payload,
+      files: files.map((file) => file.filename),
+    });
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.roomService.remove(+id);
+    return this.typeRoomService.remove(+id);
   }
 }
