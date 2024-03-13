@@ -6,5 +6,5 @@ export interface PaginateQuery {
   search?: string;
   filter?: { [column: string]: string | string[] };
   select?: string[];
-  path: string;
+  path?: string;
 }

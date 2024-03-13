@@ -1,16 +1,24 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { StringToArray } from '@base/decorators/common.decorator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
+import { StringToArray, ToNumber } from '@base/decorators/common.decorator';
 
 export abstract class ListDto {
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @ToNumber()
   page?: number;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
+  @IsPositive()
+  @ToNumber()
   limit?: number;
 
   @ApiProperty({ required: false })
@@ -34,9 +42,9 @@ export abstract class ListDto {
   @IsOptional()
   select?: string[];
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
-  path: string;
+  path?: string;
 }
 
 export class UploadFileDto {

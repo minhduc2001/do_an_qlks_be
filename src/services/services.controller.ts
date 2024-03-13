@@ -14,26 +14,34 @@ import {
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { ListServiceDto } from './dto/list-service.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadService } from '@/base/multer/upload.service';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Service')
 @Controller('services')
+@ApiBearerAuth()
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) {}
+  constructor(
+    private readonly servicesService: ServicesService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Post()
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  create(
+  async create(
     @Body() payload: CreateServiceDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.servicesService.create({ ...payload, file: file.filename });
+    const urlFile = await this.uploadService.uploadFile(file);
+    return this.servicesService.create({ ...payload, file: urlFile });
   }
 
   @Get()
+  @Public()
   findAll(@Query() query: ListServiceDto) {
     return this.servicesService.findAll(query);
   }
@@ -46,8 +54,13 @@ export class ServicesController {
   @Put(':id')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  update(@Param('id') id: string, @Body() payload: UpdateServiceDto) {
-    return this.servicesService.update(+id, payload);
+  async update(
+    @Param('id') id: string,
+    @Body() payload: UpdateServiceDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const urlFile = file && (await this.uploadService.uploadFile(file));
+    return this.servicesService.update(+id, { ...payload, file: urlFile });
   }
 
   @Delete(':id')

@@ -23,12 +23,16 @@ export class ServicesService extends BaseService<Service> {
     });
 
     if (service) throw new BadExcetion({ message: 'Dich vu da ton tai' });
-    return this.repository.save(payload);
+    return this.repository.save({
+      ...payload,
+      image: payload.image || payload.file || null,
+    });
   }
 
   async findAll(query: ListServiceDto) {
     const config: PaginateConfig<Service> = {
       sortableColumns: ['id'],
+      searchableColumns: ['name'],
     };
     return this.listWithPage(query, config);
   }
@@ -51,7 +55,11 @@ export class ServicesService extends BaseService<Service> {
       throw new BadExcetion({ message: 'Dich vu da ton tai' });
 
     const serviceUpdate = await this.findOne(id);
-    return this.repository.save({ ...serviceUpdate, ...payload });
+    return this.repository.save({
+      ...serviceUpdate,
+      ...payload,
+      image: payload.file || payload.image || null,
+    });
   }
 
   remove(id: number) {

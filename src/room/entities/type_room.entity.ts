@@ -12,10 +12,10 @@ import { Room } from './room.entity';
 
 @Entity()
 export class TypeRoom extends AbstractEntity {
-  @Column()
+  @Column({ unique: true })
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
   @Column({ nullable: true })
@@ -42,14 +42,14 @@ export class TypeRoom extends AbstractEntity {
   @Column({ nullable: true })
   checkout: string;
 
-  @Column({ type: 'simple-array', array: true, nullable: true })
+  @Column('text', { array: true, nullable: true })
   images: string[];
 
   @ManyToMany(() => FeatureRoom, (fr) => fr.type_rooms)
   @JoinTable()
   feature_rooms: FeatureRoom[];
 
-  @OneToMany(() => Room, (room) => room.id)
+  @OneToMany(() => Room, (room) => room.type_room)
   @JoinColumn()
   rooms: Room[];
 }

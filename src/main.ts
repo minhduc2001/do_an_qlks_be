@@ -22,6 +22,7 @@ async function bootstrap() {
   const loggerService = app.get(LoggerService);
   const logger = loggerService.getLogger();
 
+  app.enableCors();
   app.use(`/uploads`, express.static('uploads'));
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(morgan('dev'));

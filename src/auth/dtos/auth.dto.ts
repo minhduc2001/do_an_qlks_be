@@ -2,7 +2,7 @@ import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 export class LoginDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'admin@admin.com' })
   @IsNotEmpty({ message: 'email không được để trống' })
   @Transform(({ value }) => value && value.trim())
   @IsString()
@@ -10,7 +10,7 @@ export class LoginDto {
   // @MaxLength(30, { message: 'username không quá 30 ký tự' })
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 123123 })
   @IsNotEmpty({ message: 'USER011101' })
   @IsString()
   // @MinLength(5, { message: 'password không ít hơn 5 ký tự' })

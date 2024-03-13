@@ -10,34 +10,35 @@ import {
 import { PromotionService } from './promotion.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Public } from '@/auth/decorator/public.decorator';
 
 @ApiTags('Promotion')
 @Controller('promotion')
+@ApiBearerAuth()
 export class PromotionController {
   constructor(private readonly promotionService: PromotionService) {}
 
   @Post()
-  create(@Body() createPromotionDto: CreatePromotionDto) {
-    return this.promotionService.create(createPromotionDto);
+  create(@Body() payload: CreatePromotionDto) {
+    return this.promotionService.create(payload);
   }
 
   @Get()
+  @Public()
   findAll() {
     return this.promotionService.findAll();
   }
 
   @Get(':id')
+  @Public()
   findOne(@Param('id') id: string) {
     return this.promotionService.findOne(+id);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updatePromotionDto: UpdatePromotionDto,
-  ) {
-    return this.promotionService.update(+id, updatePromotionDto);
+  update(@Param('id') id: string, @Body() payload: UpdatePromotionDto) {
+    return this.promotionService.update(+id, payload);
   }
 
   @Delete(':id')

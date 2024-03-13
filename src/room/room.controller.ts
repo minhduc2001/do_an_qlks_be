@@ -1,22 +1,22 @@
+import { UploadService } from './../base/multer/upload.service';
 import { FeatureRoomService } from './feature_room.service';
 import {
   Controller,
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseInterceptors,
-  UploadedFile,
   Put,
   Query,
+  UploadedFiles,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { TypeRoomService } from './type_room.service';
 import { CreateTypeRoomDto } from './dto/create-type_room.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { UpdateTypeRoomDto } from './dto/update-type_room.dto';
 import { ListTypeRoomDto } from './dto/list-type_room.dto';
 import { ListRoomDto } from './dto/list-room.dto';
@@ -33,9 +33,11 @@ export class RoomController {
     private readonly roomService: RoomService,
     private readonly typeRoomService: TypeRoomService,
     private readonly featureRoomService: FeatureRoomService,
+    private readonly uploadService: UploadService,
   ) {}
 
   @Get('get-room')
+  @Public()
   findRoom(@Query() query: ListRoomDto) {
     return this.roomService.findAll(query);
   }
@@ -59,18 +61,26 @@ export class RoomController {
   @Post()
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files'))
-  create(
+  async create(
     @Body() payload: CreateTypeRoomDto,
-    @UploadedFile() files: Array<Express.Multer.File>,
+    @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
+    const urlFiles = await this.uploadService.uploadMultipeFile(files);
     return this.typeRoomService.create({
       ...payload,
-      files: files.map((file) => file.filename),
+      files: urlFiles,
     });
   }
 
   @Get()
+  @Public()
   find(@Query() query: ListTypeRoomDto) {
+    return this.typeRoomService.findAll(query);
+  }
+
+  @Get('with-relation')
+  @Public()
+  findWithRelation(@Query() query: ListTypeRoomDto) {
     return this.typeRoomService.findAll(query);
   }
 
@@ -82,14 +92,15 @@ export class RoomController {
   @Put(':id')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files'))
-  update(
+  async update(
     @Param('id') id: string,
     @Body() payload: UpdateTypeRoomDto,
-    @UploadedFile() files: Array<Express.Multer.File>,
+    @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
+    const urlFiles = await this.uploadService.uploadMultipeFile(files);
     return this.typeRoomService.update(+id, {
       ...payload,
-      files: files.map((file) => file.filename),
+      files: urlFiles,
     });
   }
 

@@ -7,6 +7,7 @@ import { Permission } from '@/role/entities/permission.entity';
 import { JoinTable } from 'typeorm';
 import { EState } from '@shared/enum/common.enum';
 import { Booking } from '@/booking/entities/booking.entity';
+import { EGender } from '../user.constant';
 
 @Entity()
 export class User extends AbstractEntity {
@@ -25,6 +26,17 @@ export class User extends AbstractEntity {
 
   @Column({ nullable: true })
   avatar: string;
+
+  @Column({ nullable: true })
+  cccd: string;
+
+  @Column({
+    type: 'enum',
+    enum: EGender,
+    default: EGender.Other,
+    nullable: true,
+  })
+  gender: EGender;
 
   @Column({ nullable: false, type: 'enum', enum: ERole, default: ERole.User })
   role: ERole;

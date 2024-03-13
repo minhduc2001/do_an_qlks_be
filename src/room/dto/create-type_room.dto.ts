@@ -1,6 +1,7 @@
 import { ToNumber, ToNumbers, Trim } from '@/base/decorators/common.decorator';
 import { UploadFilesDto } from '@/shared/dtos/common.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsNotEmpty,
@@ -8,6 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateTypeRoomDto extends UploadFilesDto {
@@ -65,6 +67,7 @@ export class CreateTypeRoomDto extends UploadFilesDto {
   @Trim()
   checkout: string;
 
+  @ValidateIf(({ values }) => !!values)
   @ApiPropertyOptional({ example: [1, 2, 3] })
   @IsOptional()
   @IsPositive({ each: true })
@@ -72,9 +75,11 @@ export class CreateTypeRoomDto extends UploadFilesDto {
   @ToNumbers()
   feature_rooms: number[];
 
+  @ValidateIf(({ values }) => !!values)
   @ApiPropertyOptional({ example: [''] })
   @IsOptional()
   @IsString({ each: true })
+  @Transform(({ value }) => value && value.toString().split(','))
   @IsArray()
   images: string[];
 }

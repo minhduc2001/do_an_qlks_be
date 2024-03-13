@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
 import { InjectRepository } from '@nestjs/typeorm';
+import { kebabCase } from 'lodash';
 import { TypeRoom } from './entities/type_room.entity';
 import { In, Repository } from 'typeorm';
 import { BaseService } from '@/base/service/base.service';
@@ -12,6 +11,7 @@ import { BadExcetion, BadRequest } from '@/base/api/exception.reslover';
 import { PaginateConfig } from '@/base/service/paginate/paginate';
 import { ListTypeRoomDto } from './dto/list-type_room.dto';
 import { Room } from './entities/room.entity';
+import { removeAccents } from '@/base/helper/function.helper';
 
 @Injectable()
 export class TypeRoomService extends BaseService<TypeRoom> {
@@ -38,7 +38,11 @@ export class TypeRoomService extends BaseService<TypeRoom> {
       checkin,
       checkout,
       feature_rooms,
+      images,
+      files,
     } = payload;
+
+    const slug: string = kebabCase(`${removeAccents(name)}}`);
 
     const fr = await this._prepare(feature_rooms);
 
@@ -53,6 +57,8 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     tr.checkin = checkin;
     tr.checkout = checkout;
     tr.feature_rooms = fr;
+    tr.slug = slug;
+    tr.images = this._handleImage(images, files);
 
     return tr.save();
   }
@@ -60,6 +66,16 @@ export class TypeRoomService extends BaseService<TypeRoom> {
   async findAll(query: ListTypeRoomDto) {
     const config: PaginateConfig<TypeRoom> = {
       sortableColumns: ['id'],
+      relations: ['feature_rooms', 'rooms'],
+    };
+
+    return this.listWithPage(query, config);
+  }
+
+  async findAllWithRelation(query: ListTypeRoomDto) {
+    const config: PaginateConfig<TypeRoom> = {
+      sortableColumns: ['id'],
+      relations: ['rooms'],
     };
 
     return this.listWithPage(query, config);
@@ -83,11 +99,14 @@ export class TypeRoomService extends BaseService<TypeRoom> {
       checkin,
       checkout,
       feature_rooms,
+      images,
+      files,
     } = payload;
 
     const tr = await this.repository.findOne({ where: { id } });
     if (!tr) throw new BadExcetion({ message: 'phong khong ton tai' });
 
+    const slug: string = kebabCase(`${removeAccents(name)}}`);
     const fr = await this._prepare(feature_rooms);
 
     tr.name = name;
@@ -100,6 +119,8 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     tr.checkin = checkin;
     tr.checkout = checkout;
     tr.feature_rooms = fr;
+    tr.slug = slug;
+    tr.images = this._handleImage(images, files);
 
     return tr.save();
   }
@@ -120,5 +141,13 @@ export class TypeRoomService extends BaseService<TypeRoom> {
       });
     }
     return [];
+  }
+
+  private _handleImage(images: string[], files: string[]) {
+    console.log(images);
+
+    const newImages = images || [];
+    if (Array.isArray(files)) newImages.push(...files);
+    return newImages;
   }
 }

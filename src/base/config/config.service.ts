@@ -36,6 +36,9 @@ export class ConfigService {
   // file
   MAX_FILE_SIZE = 10000000; // 10MB;
   UPLOAD_LOCATION = 'uploads';
+
+  // firebase
+  STOGARE_BUCKET = _process.env.STOGARE_BUCKET;
 }
 
 export const config = new ConfigService();

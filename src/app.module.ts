@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // BASE
-import { config } from '@/config';
 import { LoggerModule } from '@base/logger/logger.module';
 import { dbConfig } from '@base/db/db.config';
 import { MailerModule } from '@base/mailer/mailer.module';
@@ -22,9 +21,10 @@ import { ServicesModule } from './services/services.module';
 
 import { BillModule } from './bill/bill.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { UploadFileModule } from './base/multer/upload-file.module';
 
 const appModule = [AuthModule, UserModule, RoleModule, MailerModule];
-const baseModule = [LoggerModule];
+const baseModule = [LoggerModule, UploadFileModule];
 
 @Module({
   imports: [
