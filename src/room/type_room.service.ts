@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { kebabCase } from 'lodash';
 import { TypeRoom } from './entities/type_room.entity';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { BaseService } from '@/base/service/base.service';
 import { CreateTypeRoomDto } from './dto/create-type_room.dto';
 import { FeatureRoom } from './entities/feature_room.entity';
@@ -12,6 +12,7 @@ import { PaginateConfig } from '@/base/service/paginate/paginate';
 import { ListTypeRoomDto } from './dto/list-type_room.dto';
 import { Room } from './entities/room.entity';
 import { removeAccents } from '@/base/helper/function.helper';
+import { AddRoomDto } from './dto/add-room.dto';
 
 @Injectable()
 export class TypeRoomService extends BaseService<TypeRoom> {
@@ -22,6 +23,7 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     private readonly featureRoomRepository: Repository<FeatureRoom>,
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
+    private dataSource: DataSource,
   ) {
     super(repository);
   }
@@ -81,8 +83,15 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     return this.listWithPage(query, config);
   }
 
-  async findOne(id: number) {
-    const tr = await this.repository.findOne({ where: { id } });
+  async findOne(identity: string) {
+    const isInterger = Number.isInteger(identity);
+
+    const option = isInterger ? { id: +identity } : { slug: identity };
+    const tr = await this.repository.findOne({
+      where: option,
+      relations: { feature_rooms: true },
+    });
+
     if (!tr) throw new BadExcetion({ message: 'phong khong ton tai' });
     return tr;
   }
@@ -125,7 +134,34 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     return tr.save();
   }
 
-  async addRoom() {}
+  async addRoom(id: number, payload: AddRoomDto) {
+    const tr = await this.repository.findOne({ where: { id } });
+    if (!tr) throw new BadExcetion({ message: 'phong khong ton tai' });
+
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    try {
+      await queryRunner.query(
+        'DELETE FROM room WHERE typeRoomId = $1 AND where is_booking = $2',
+        [tr.id, false],
+      );
+
+      const values = payload.room_names
+        .map((name) => `('${name}', ${tr.id})`)
+        .join(', ');
+      await queryRunner.query(`INSERT INTO room (name, typeRoomId) VALUES $1`, [
+        values,
+      ]);
+
+      await queryRunner.commitTransaction();
+      return true;
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      throw new BadExcetion({ message: e.message });
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   async remove(id: number) {
     const tr = await this.repository.findOne({ where: { id } });

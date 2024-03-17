@@ -1,13 +1,11 @@
-import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 import { ERole } from '@/role/enum/roles.enum';
 import { AbstractEntity } from '@/base/service/abstract-entity.service';
-import { Permission } from '@/role/entities/permission.entity';
-import { JoinTable } from 'typeorm';
 import { EState } from '@shared/enum/common.enum';
 import { Booking } from '@/booking/entities/booking.entity';
-import { EGender } from '../user.constant';
+import { EGender, EProvider, EStatusCustomer } from '../user.constant';
 
 @Entity()
 export class User extends AbstractEntity {
@@ -18,7 +16,7 @@ export class User extends AbstractEntity {
   @Column()
   password: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: true })
@@ -26,6 +24,9 @@ export class User extends AbstractEntity {
 
   @Column({ nullable: true })
   avatar: string;
+
+  @Column({ nullable: true })
+  address: string;
 
   @Column({ nullable: true })
   cccd: string;
@@ -38,13 +39,31 @@ export class User extends AbstractEntity {
   })
   gender: EGender;
 
+  @Column({ default: true })
+  first_login: boolean;
+
   @Column({ nullable: false, type: 'enum', enum: ERole, default: ERole.User })
   role: ERole;
+
+  @Column({
+    nullable: true,
+    enum: EProvider,
+    type: 'enum',
+    default: EProvider.Owner,
+  })
+  provider: EProvider;
+
+  @Column({
+    nullable: true,
+    enum: EStatusCustomer,
+    type: 'enum',
+    default: EStatusCustomer.Checkout,
+  })
+  status_customer: EStatusCustomer;
 
   // @ManyToMany(() => Permission, (permission) => permission)
   // @JoinTable()
   // permissions: Permission[];
-
   @Column({ type: 'enum', enum: EState, default: EState.Active })
   state: EState;
 

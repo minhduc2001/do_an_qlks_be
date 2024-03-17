@@ -24,6 +24,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ListDto } from '@/shared/dtos/common.dto';
 import { Public } from '@/auth/decorator/public.decorator';
+import { AddRoomDto } from './dto/add-room.dto';
 
 @ApiTags('Room')
 @Controller('room')
@@ -84,9 +85,10 @@ export class RoomController {
     return this.typeRoomService.findAll(query);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.typeRoomService.findOne(+id);
+  @Get(':identity')
+  @Public()
+  findOne(@Param('identity') identity: string) {
+    return this.typeRoomService.findOne(identity);
   }
 
   @Put(':id')
@@ -97,11 +99,17 @@ export class RoomController {
     @Body() payload: UpdateTypeRoomDto,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
-    const urlFiles = await this.uploadService.uploadMultipeFile(files);
+    const urlFiles =
+      files && (await this.uploadService.uploadMultipeFile(files));
     return this.typeRoomService.update(+id, {
       ...payload,
       files: urlFiles,
     });
+  }
+
+  @Put(':id/add-room-name')
+  async addRoomName(@Param('id') id: string, @Body() payload: AddRoomDto) {
+    return this.typeRoomService.addRoom(+id, payload);
   }
 
   @Delete(':id')

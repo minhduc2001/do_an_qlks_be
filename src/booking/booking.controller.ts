@@ -6,11 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { ListDto } from '@/shared/dtos/common.dto';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -23,8 +25,13 @@ export class BookingController {
   }
 
   @Get()
-  findAll() {
-    return this.bookingService.findAll();
+  findAll(@Query() query: ListDto) {
+    return this.bookingService.findAll(query);
+  }
+
+  @Get(':email/search')
+  findByEmail() {
+    return;
   }
 
   @Get(':id')

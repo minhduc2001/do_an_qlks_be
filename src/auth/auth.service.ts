@@ -24,7 +24,7 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<any> {
     const { email, password } = dto;
-    const user = await this.userService.getUserByUniqueKey({ email });
+    const user = await this.userService.findByEmail(email);
 
     if (!user || !user.comparePassword(password))
       throw new exc.BadRequest({
@@ -44,17 +44,21 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    let isExists = await this.userService.getUserByUniqueKey({
-      email: dto.email,
-    });
+    let isExists = await this.userService.findByEmail(dto.email);
 
     if (isExists) throw new exc.BadRequest({ message: 'email already is use' });
 
-    isExists = await this.userService.getUserByUniqueKey({
-      email: dto.email,
-    });
+    const user = await this.userService.createUser(dto);
 
-    if (isExists) throw new exc.BadRequest({ message: 'email already is use' });
-    return this.userService.createUser(dto);
+    const payload: IJWTPayload = {
+      sub: user.id,
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      ...user,
+      accessToken: accessToken,
+    };
   }
 }

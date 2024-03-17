@@ -1,4 +1,5 @@
 import { ToNumber, Trim } from '@/base/decorators/common.decorator';
+import { UploadFileDto } from '@/shared/dtos/common.dto';
 import { EState } from '@/shared/enum/common.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, TransformFnParams } from 'class-transformer';
@@ -14,7 +15,7 @@ import {
 } from 'class-validator';
 import * as dayjs from 'dayjs';
 
-export class CreatePromotionDto {
+export class CreatePromotionDto extends UploadFileDto {
   @ApiProperty({ example: 'Giặt đồ' })
   @IsNotEmpty()
   @IsString()
@@ -36,12 +37,14 @@ export class CreatePromotionDto {
   @ApiProperty({ example: dayjs().startOf('month').format('YYYY-MM-DD') })
   @IsNotEmpty()
   @IsDate()
+  @Transform(({ value }) => value && new Date(value))
   start_date: Date;
 
   @ApiProperty({ example: dayjs().startOf('month').format('YYYY-MM-DD') })
   @IsNotEmpty()
   @IsDate()
-  end_date: string;
+  @Transform(({ value }) => value && new Date(value))
+  end_date: Date;
 
   @ApiProperty({ example: 1.2 })
   @IsNotEmpty()

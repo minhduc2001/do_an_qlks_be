@@ -2,7 +2,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseGuards,
@@ -18,7 +20,7 @@ import { Roles } from '@/role/roles.decorator';
 import { ERole } from '@/role/enum/roles.enum';
 import { Public } from '@/auth/decorator/public.decorator';
 import { JwtAuthGuard } from '@/auth/guard/jwt-auth.guard';
-import { ListUserDto, UploadAvatarDto } from './dtos/user.dto';
+import { ListUserDto, UpdateUserDto, UploadAvatarDto } from './dtos/user.dto';
 import { Permissions } from '@/role/permission.decorator';
 import { PERMISSIONS } from '@shared/constants/permission.constant';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -39,14 +41,8 @@ export class UserController {
     return this.userService.getAllUser(query);
   }
 
-  @Post()
-  @Public()
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadFile(
-    @Body() dto: UploadAvatarDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.userService.uploadAvatar({ ...dto, file: file.filename });
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() payload: UpdateUserDto) {
+    return this.userService.update(+id, payload);
   }
 }
