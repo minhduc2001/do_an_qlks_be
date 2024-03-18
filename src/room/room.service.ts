@@ -8,16 +8,22 @@ import { BaseService } from '@/base/service/base.service';
 import { BadExcetion } from '@/base/api/exception.reslover';
 import { ListRoomDto } from './dto/list-room.dto';
 import { PaginateConfig } from '@/base/service/paginate/paginate';
+import { TypeRoom } from './entities/type_room.entity';
 
 @Injectable()
 export class RoomService extends BaseService<Room> {
   constructor(
     @InjectRepository(Room)
     protected readonly repository: Repository<Room>,
+    @InjectRepository(TypeRoom)
+    private readonly typeRoomRepository: Repository<TypeRoom>,
   ) {
     super(repository);
   }
-  async create(payload: CreateRoomDto) {
+  async create(type_room_id: number, payload: CreateRoomDto) {
+    const type_room = await this.typeRoomRepository.findOne({
+      where: { id: type_room_id },
+    });
     const room = await this.repository.findOne({
       where: { name: payload.name },
     });

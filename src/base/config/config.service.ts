@@ -39,6 +39,12 @@ export class ConfigService {
 
   // firebase
   STOGARE_BUCKET = _process.env.STOGARE_BUCKET;
+
+  VNP_TMNCODE = _process.env.VNP_TMNCODE;
+  VNP_HASH_SECRET = _process.env.VNP_HASH_SECRET;
+  VNP_URL = _process.env.VNP_URL;
+  VNP_API = _process.env.VNP_API;
+  VNP_RETURN_URL = _process.env.VNP_RETURN_URL;
 }
 
 export const config = new ConfigService();

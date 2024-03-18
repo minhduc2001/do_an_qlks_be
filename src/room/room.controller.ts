@@ -43,9 +43,9 @@ export class RoomController {
     return this.roomService.findAll(query);
   }
 
-  @Post('create-room')
-  createRoom(@Body() payload: CreateRoomDto) {
-    return this.roomService.create(payload);
+  @Put(':type_room_id/create-room')
+  createRoom(@Param() type_room_id: string, @Body() payload: CreateRoomDto) {
+    return this.roomService.create(+type_room_id, payload);
   }
 
   @Put(':id/update-room')

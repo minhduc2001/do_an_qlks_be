@@ -8,6 +8,9 @@ export class Bill extends AbstractEntity {
   @Column({ default: 0 })
   amount: number;
 
+  @Column({ nullable: true })
+  order_id: string;
+
   @Column({ type: 'enum', enum: EPaymentType, default: EPaymentType.Cash })
   payment_type: EPaymentType;
 

@@ -13,6 +13,7 @@ import { EBookingState } from '../booking.constant';
 import { User } from '@/user/entities/user.entity';
 import { Bill } from '@/bill/entities/bill.entity';
 import { Room } from '@/room/entities/room.entity';
+import { BookedRoom } from './booked_room.entity';
 
 @Entity()
 export class Booking extends AbstractEntity {
@@ -39,11 +40,13 @@ export class Booking extends AbstractEntity {
   quantity: number;
 
   @Column({ default: false })
-  isCheckedIn: boolean;
+  is_checked_in: boolean;
 
-  @ManyToMany(() => Room, (room) => room)
-  @JoinTable()
-  rooms: Room[];
+  @Column({ default: false })
+  is_checked_out: boolean;
+
+  @OneToMany(() => BookedRoom, (br) => br.booking)
+  booked_rooms: BookedRoom[];
 
   @OneToMany(() => UsedService, (us) => us.booking)
   @JoinColumn()

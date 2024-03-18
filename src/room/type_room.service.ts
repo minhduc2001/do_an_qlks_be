@@ -68,10 +68,15 @@ export class TypeRoomService extends BaseService<TypeRoom> {
   async findAll(query: ListTypeRoomDto) {
     const config: PaginateConfig<TypeRoom> = {
       sortableColumns: ['id'],
-      relations: ['feature_rooms', 'rooms'],
     };
 
-    return this.listWithPage(query, config);
+    const queryB = this.repository
+      .createQueryBuilder('type_room')
+      .leftJoinAndSelect('type_room.rooms', 'room')
+      .leftJoinAndSelect('room.booked_rooms', 'br')
+      .leftJoinAndSelect('br.booking', 'booking');
+
+    return this.listWithPage(query, config, queryB);
   }
 
   async findAllWithRelation(query: ListTypeRoomDto) {
@@ -135,23 +140,37 @@ export class TypeRoomService extends BaseService<TypeRoom> {
   }
 
   async addRoom(id: number, payload: AddRoomDto) {
-    const tr = await this.repository.findOne({ where: { id } });
+    const tr = await this.repository.findOne({
+      where: { id },
+      relations: { rooms: true },
+    });
     if (!tr) throw new BadExcetion({ message: 'phong khong ton tai' });
 
+    const tr_name_id = tr.rooms.map((r) => r.id);
+
+    const newRoom = [];
+    const newRoomDel = [];
+
+    for (const r of payload.room_names) {
+      if (!r.id)
+        newRoom.push(this.roomRepository.create({ ...r, type_room: tr }));
+      if (tr_name_id.includes(r.id))
+        newRoom.push(
+          await this.roomRepository.findOne({ where: { id: r.id } }),
+        );
+      else newRoomDel.push(r.id);
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
-
+    queryRunner.startTransaction();
     try {
-      await queryRunner.query(
-        'DELETE FROM room WHERE typeRoomId = $1 AND where is_booking = $2',
-        [tr.id, false],
-      );
-
-      const values = payload.room_names
-        .map((name) => `('${name}', ${tr.id})`)
-        .join(', ');
-      await queryRunner.query(`INSERT INTO room (name, typeRoomId) VALUES $1`, [
-        values,
-      ]);
+      if (newRoomDel.length)
+        await Promise.all(
+          newRoomDel.map((r) =>
+            queryRunner.query('DELETE FROM room where room.id = $1', [r]),
+          ),
+        );
+      await Promise.all(newRoom.map((r) => r.save()));
 
       await queryRunner.commitTransaction();
       return true;

@@ -1,10 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { ToNumber, Trim } from '@/base/decorators/common.decorator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
+
+export class RoomNameDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ToNumber()
+  @IsPositive()
+  id: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @Trim()
+  name: string;
+}
 
 export class AddRoomDto {
   @ApiProperty()
-  @IsString({ each: true })
   @IsNotEmpty()
   @IsArray()
-  room_names: string[];
+  room_names: RoomNameDto[];
 }

@@ -1,10 +1,20 @@
+import { Booking } from '@/booking/entities/booking.entity';
+
 export enum EPaymentType {
-  Momo = 'momo',
-  Cash = 'cash',
+  Momo,
+  Vnpay,
+  Zalopay,
+  Cash,
 }
 
 export enum EPaymentState {
   Pending = 'pending',
   Fulfilled = 'fulfilled',
   Reject = 'reject',
+}
+
+export interface ICreateBill {
+  booking: Booking;
+  amount: number;
+  payment_type: EPaymentType;
 }
