@@ -45,6 +45,9 @@ export class Booking extends AbstractEntity {
   @Column({ default: false })
   is_checked_out: boolean;
 
+  @Column({ default: false })
+  is_cancel: boolean;
+
   @OneToMany(() => BookedRoom, (br) => br.booking)
   booked_rooms: BookedRoom[];
 

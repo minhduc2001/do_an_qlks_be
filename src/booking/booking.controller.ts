@@ -9,8 +9,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import {
+  CmsCreateBookingDto,
+  CreateBookingDto,
+} from './dto/create-booking.dto';
+import { AddServiceDto, UpdateBookingDto } from './dto/update-booking.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ListDto } from '@/shared/dtos/common.dto';
 import { GetUser } from '@/auth/decorator/get-user.decorator';
@@ -29,6 +32,11 @@ export class BookingController {
     return this.bookingService.create(payload, user);
   }
 
+  @Post('cms')
+  adminCreate(@Body() payload: CmsCreateBookingDto, @GetUser() user: User) {
+    return this.bookingService.cmsCreate(payload, user);
+  }
+
   @Post('check')
   @Public()
   checkRoomExits(@Body() payload: CheckRoomExitsDto) {
@@ -45,9 +53,24 @@ export class BookingController {
     return this.bookingService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto) {
-    return this.bookingService.update(+id, updateBookingDto);
+  @Patch(':id/add-service')
+  addService(@Param('id') id: string, @Body() payload: AddServiceDto[]) {
+    return this.bookingService.addService(+id, payload);
+  }
+
+  @Patch('checkin/:id')
+  checkin(@Param('id') id: string) {
+    return this.bookingService.checkin(+id);
+  }
+
+  @Patch('checkout/:id')
+  checkout(@Param('id') id: string) {
+    return this.bookingService.checkout(+id);
+  }
+
+  @Patch('cancel/:id')
+  cancel(@Param('id') id: string) {
+    return this.bookingService.cancel(+id);
   }
 
   @Delete(':id')

@@ -13,10 +13,10 @@ export class User extends AbstractEntity {
   username: string;
 
   @Exclude({ toPlainOnly: true })
-  @Column()
+  @Column({ nullable: true })
   password: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   email: string;
 
   @Column({ nullable: true })

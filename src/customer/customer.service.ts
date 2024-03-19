@@ -6,7 +6,7 @@ import { PaginateConfig } from '@/base/service/paginate/paginate';
 import { User } from '@/user/entities/user.entity';
 import { BaseService } from '@/base/service/base.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { ERole } from '@/role/enum/roles.enum';
 
 @Injectable()
@@ -31,6 +31,13 @@ export class CustomerService extends BaseService<User> {
       .where({ role: ERole.User });
 
     return this.listWithPage(query, config, queryB);
+  }
+
+  async findEmail(email: string) {
+    return this.repository.find({
+      where: { email, id: Not(1) },
+      select: ['id', 'username', 'email', 'phone', 'address', 'cccd'],
+    });
   }
 
   findOne(id: number) {

@@ -1,6 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import {
+  CmsCreateBookingDto,
+  CreateBookingDto,
+} from './dto/create-booking.dto';
+import { AddServiceDto, UpdateBookingDto } from './dto/update-booking.dto';
 import { BaseService } from '@/base/service/base.service';
 import { Booking } from './entities/booking.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,6 +18,10 @@ import { BillService } from '@/bill/bill.service';
 import { BookedRoom } from './entities/booked_room.entity';
 import { BookedRoomService } from './booked_room.service';
 import { CheckRoomExitsDto } from './dto/check-room-exsits.dto';
+import { EProvider } from '@/user/user.constant';
+import { EBookingState } from './booking.constant';
+import { Service } from '@/services/entities/service.entity';
+import { UsedService } from '@/services/entities/used_service.entity';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -26,8 +33,14 @@ export class BookingService extends BaseService<Booking> {
     private readonly typeRoomRepository: Repository<TypeRoom>,
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
-    @InjectRepository(BookedRoom)
-    private readonly bookedRoomRepository: Repository<BookedRoom>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+
+    @InjectRepository(Service)
+    private readonly serviceRepository: Repository<Service>,
+    @InjectRepository(UsedService)
+    private readonly usedServiceRepository: Repository<UsedService>,
+
     private readonly bookedRoomSerivce: BookedRoomService,
     private readonly billService: BillService,
     private dataSource: DataSource,
@@ -51,18 +64,92 @@ export class BookingService extends BaseService<Booking> {
     booking.checkout = check_out;
     booking.customer = user;
     booking.quantity = quantity;
+    booking.user = { id: 1 } as User;
 
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
       queryRunner.startTransaction();
-
+      await booking.save();
       const url = await this.billService.create({
         booking,
         amount: quantity * type_room.price,
         payment_type: payment_method,
       });
+
+      for (const room of rooms) {
+        await this.roomRepository.update(room.id, { is_booking: true });
+        await this.bookedRoomSerivce.create(booking, room);
+      }
+      await queryRunner.commitTransaction();
+      return url;
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      throw new BadExcetion({ message: e.message });
+    } finally {
+      await queryRunner.release();
+    }
+  }
+  async cmsCreate(payload: CmsCreateBookingDto, user: User) {
+    const {
+      checkin,
+      checkout,
+      type_room_id,
+      quantity,
+      payment_type,
+      username,
+      email,
+      id,
+      cccd,
+      phone,
+      gender,
+      address,
+    } = payload;
+
+    const { rooms, type_room } = await this._prepare(
+      type_room_id,
+      quantity,
+      checkin,
+      checkout,
+    );
+
+    let customer: User = null;
+
+    if (id) {
+      customer = await this.userRepository.findOne({ where: { id } });
+    }
+
+    if (!customer) {
+      customer = this.userRepository.create();
+      customer.email = email;
+      customer.cccd = cccd;
+      customer.username = username;
+      customer.phone = phone;
+      customer.gender = gender;
+      customer.address = address;
+      customer.provider = EProvider.System;
+
+      await this.userRepository.save(customer);
+    }
+
+    const booking = this.repository.create();
+    booking.checkin = checkin;
+    booking.checkout = checkout;
+    booking.user = user;
+    booking.quantity = quantity;
+    booking.customer = customer;
+    booking.state = EBookingState.AdminInit;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    try {
+      queryRunner.startTransaction();
       await booking.save();
+      const url = await this.billService.create({
+        booking,
+        amount: quantity * type_room.price,
+        payment_type: payment_type,
+      });
 
       for (const room of rooms) {
         await this.roomRepository.update(room.id, { is_booking: true });
@@ -81,8 +168,20 @@ export class BookingService extends BaseService<Booking> {
   async findAll(query: ListDto) {
     const config: PaginateConfig<Booking> = {
       sortableColumns: ['updatedAt'],
+      defaultSortBy: [['updatedAt', 'DESC']],
     };
-    return this.listWithPage(query, config);
+
+    const queryB = this.repository
+      .createQueryBuilder('bk')
+      .leftJoinAndSelect('bk.booked_rooms', 'br')
+      .leftJoinAndSelect('br.room', 'room')
+      .leftJoinAndSelect('room.type_room', 'tr')
+      .leftJoinAndSelect('bk.customer', 'customer')
+      .leftJoinAndSelect('bk.user', 'user')
+      .leftJoinAndSelect('bk.used_services', 'us')
+      .leftJoinAndSelect('us.service', 'service');
+
+    return this.listWithPage(query, config, queryB);
   }
 
   async findOne(id: number) {
@@ -93,6 +192,64 @@ export class BookingService extends BaseService<Booking> {
 
   async update(id: number, payload: UpdateBookingDto) {
     return `This action updates a #${id} booking`;
+  }
+
+  async addService(id: number, payload: AddServiceDto[]) {
+    const { booking, services } = await this._prepare_add_room(id, payload);
+
+    await Promise.all(
+      services.map((service) => {
+        this.usedServiceRepository.save({
+          booking,
+          service,
+          quantity: service.quantity_used,
+          name: service.name,
+        });
+      }),
+    );
+    return true;
+  }
+
+  async checkin(id: number) {
+    const { booking } = await this._prepare_add_room(id);
+    if (booking.state == EBookingState.Done)
+      throw new BadExcetion({ message: 'Đơn đã hoàn thành' });
+
+    if (booking.state == EBookingState.Reject)
+      throw new BadExcetion({ message: 'Đơn đã bị hủy' });
+
+    booking.is_checked_in = true;
+
+    await booking.save();
+    return true;
+  }
+
+  async checkout(id: number) {
+    const { booking } = await this._prepare_add_room(id);
+    if (!booking.is_checked_in)
+      throw new BadExcetion({ message: 'Phòng chưa checkin' });
+
+    if (booking.state == EBookingState.Reject)
+      throw new BadExcetion({ message: 'Đơn đã bị hủy' });
+    booking.is_checked_out = true;
+    booking.state = EBookingState.Done;
+
+    await booking.save();
+    return true;
+  }
+
+  async cancel(id: number) {
+    const { booking } = await this._prepare_add_room(id);
+    if (booking.state == EBookingState.Done)
+      throw new BadExcetion({ message: 'Đơn đã hoàn thành' });
+
+    if (booking.is_checked_in)
+      throw new BadExcetion({ message: 'Phòng đang được sử dụng' });
+
+    booking.state = EBookingState.Reject;
+    booking.is_cancel = true;
+    await booking.save();
+    return true;
   }
 
   async remove(id: number) {
@@ -182,5 +339,24 @@ export class BookingService extends BaseService<Booking> {
     }
 
     return { rooms: rooms.slice(0, quantity), type_room };
+  }
+
+  async _prepare_add_room(id: number, payloads?: AddServiceDto[]) {
+    const booking = await this.repository.findOne({ where: { id } });
+    if (!booking) throw new BadExcetion({ message: 'Không tồn tại đơn này' });
+
+    const services = [];
+    if (payloads)
+      for (const payload of payloads) {
+        const service = await this.serviceRepository.findOne({
+          where: { id: payload.serivce_id },
+        });
+
+        if (!service)
+          throw new BadExcetion({ message: 'Không tồn tại dịch vụ này' });
+        services.push({ ...service, quantity_used: payload.quantity });
+      }
+
+    return { booking, services };
   }
 }

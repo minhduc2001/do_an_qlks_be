@@ -37,6 +37,10 @@ export class BillService extends BaseService<Bill> {
           });
           break;
         }
+        case EPaymentType.Cash: {
+          url = { payUrl: null };
+          break;
+        }
         default: {
           break;
         }

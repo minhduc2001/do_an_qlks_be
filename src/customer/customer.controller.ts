@@ -27,6 +27,11 @@ export class CustomerController {
     return this.customerService.findAll(query);
   }
 
+  @Post('/mail')
+  findEmail(@Body() payload: { email: string }) {
+    return this.customerService.findEmail(payload.email);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customerService.findOne(+id);

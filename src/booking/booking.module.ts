@@ -9,10 +9,22 @@ import { Bill } from '@/bill/entities/bill.entity';
 import { BillModule } from '@/bill/bill.module';
 import { BookedRoom } from './entities/booked_room.entity';
 import { BookedRoomService } from './booked_room.service';
+import { User } from '@/user/entities/user.entity';
+import { Service } from '@/services/entities/service.entity';
+import { UsedService } from '@/services/entities/used_service.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, TypeRoom, Room, Bill, BookedRoom]),
+    TypeOrmModule.forFeature([
+      Booking,
+      TypeRoom,
+      Room,
+      Bill,
+      BookedRoom,
+      User,
+      Service,
+      UsedService,
+    ]),
     BillModule,
   ],
   controllers: [BookingController],
