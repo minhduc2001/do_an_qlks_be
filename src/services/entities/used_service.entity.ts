@@ -11,6 +11,9 @@ export class UsedService extends AbstractEntity {
   @Column()
   quantity: number;
 
+  @Column({ nullable: true })
+  price: number;
+
   @ManyToOne(() => Service, (service) => service.used_services)
   @JoinColumn()
   service: Service;

@@ -25,7 +25,7 @@ export class TypeRoom extends AbstractEntity {
   price: number;
 
   @Column({ nullable: true })
-  parent: string;
+  parent: number;
 
   @Column({ nullable: true })
   contains: number;

@@ -8,12 +8,14 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { EBookingState } from '../booking.constant';
 import { User } from '@/user/entities/user.entity';
 import { Bill } from '@/bill/entities/bill.entity';
 import { Room } from '@/room/entities/room.entity';
 import { BookedRoom } from './booked_room.entity';
+import { Promotion } from '@/promotion/entities/promotion.entity';
 
 @Entity()
 export class Booking extends AbstractEntity {
@@ -38,6 +40,9 @@ export class Booking extends AbstractEntity {
 
   @Column({ nullable: true, default: 0 })
   quantity: number;
+
+  @Column({ nullable: true, default: 0 })
+  discount: number;
 
   @Column({ default: false })
   is_checked_in: boolean;
@@ -66,4 +71,8 @@ export class Booking extends AbstractEntity {
   @OneToMany(() => Bill, (bill) => bill.booking)
   @JoinColumn()
   bills: Bill[];
+
+  @OneToOne(() => Promotion)
+  @JoinColumn()
+  promotion: Promotion;
 }

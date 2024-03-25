@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hóa đơn khách sạn</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 40px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .logo {
+        display: inline-block;
+        margin-right: 20px;
+      }
+
+      .logo img {
+        width: 100px;
+      }
+
+      .hotel-name {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0;
+      }
+
+      .info {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .info-left,
+      .info-right {
+        width: 48%;
+      }
+
+      .info-left p {
+        margin-bottom: 10px;
+      }
+
+      .table {
+        margin-top: 40px;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table th,
+      .table td {
+        border: 1px solid #ddd;
+        padding: 12px 8px;
+        text-align: left;
+      }
+
+      .table th {
+        font-weight: bold;
+        background-color: #f7f7f7;
+      }
+
+      .total {
+        margin-top: 40px;
+        text-align: right;
+        font-weight: bold;
+      }
+
+      .total span {
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <img
+            src="https://ninhbinhlegendhotel.com/wp-content/uploads/2022/07/cropped-logo02.png"
+            alt="Logo khách sạn"
+          />
+        </div>
+        <div class="hotel-name">Ninh Bình Legend</div>
+      </div>
+      <div class="info">
+        <div class="info-left">
+          <p>
+            Địa chỉ: 177, Lê Thái Tổ, Khu đô thị Xuân Thành, Thành Phố Ninh
+            Bình, Việt Nam
+          </p>
+          <p>Điện thoại: +842293 899 880</p>
+          <p>Email: info@ninhbinhlegendhotel.com</p>
+        </div>
+        <div class="info-right">
+          <p>Mã hóa đơn: {{order_id}}</p>
+          <p>Ngày tạo: {{createdAt}}</p>
+          <p>Tên khách hàng: {{username}}</p>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Loại phòng</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Khuyễn mãi</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{type_room}}</td>
+            <td>{{quantity}}</td>
+            <td>{{price}} đ</td>
+            <td>{{discount}} %</td>
+            <td>{{amount}} đ</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {{#if service}}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tên dịch vụ</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Ngày sử dụng</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each services}}
+          <tr>
+            <td>{{name}}</td>
+            <td>{{quantity}}</td>
+            <td>{{price}} đ</td>
+            <td>{{createdAt}}</td>
+            <td>{{amount}} đ</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+      <div class="total">Tổng cộng: <span>{{total_amount}} đ</span></div>
+    </div>
+  </body>
+</html>

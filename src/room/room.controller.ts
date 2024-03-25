@@ -80,9 +80,8 @@ export class RoomController {
   }
 
   @Get('with-relation')
-  @Public()
-  findWithRelation(@Query() query: ListTypeRoomDto) {
-    return this.typeRoomService.findAll(query);
+  findWithRelation() {
+    return this.typeRoomService.findAllWithRelation();
   }
 
   @Get(':identity')

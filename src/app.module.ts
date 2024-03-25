@@ -22,6 +22,7 @@ import { ServicesModule } from './services/services.module';
 import { BillModule } from './bill/bill.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UploadFileModule } from './base/multer/upload-file.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 const appModule = [AuthModule, UserModule, RoleModule, MailerModule];
 const baseModule = [LoggerModule, UploadFileModule];
@@ -29,6 +30,7 @@ const baseModule = [LoggerModule, UploadFileModule];
 @Module({
   imports: [
     CacheModule.register(),
+    EventEmitterModule.forRoot(),
     ...baseModule,
     ...appModule,
     TypeOrmModule.forRoot(dbConfig),

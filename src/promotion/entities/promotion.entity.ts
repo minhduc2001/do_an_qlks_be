@@ -16,6 +16,9 @@ export class Promotion extends AbstractEntity {
   @Column({ nullable: true })
   slug: string;
 
+  @Column({ nullable: true, default: 0 })
+  condition: number;
+
   @Column({ default: new Date() })
   start_date: Date;
 

@@ -22,6 +22,13 @@ import { EProvider } from '@/user/user.constant';
 import { EBookingState } from './booking.constant';
 import { Service } from '@/services/entities/service.entity';
 import { UsedService } from '@/services/entities/used_service.entity';
+import Handlebars from 'handlebars';
+import * as path from 'path';
+import * as fs from 'fs';
+import puppeteer from 'puppeteer';
+import * as moment from 'moment';
+import { Promotion } from '@/promotion/entities/promotion.entity';
+import { MailerService } from '@/base/mailer/mailer.service';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -38,12 +45,15 @@ export class BookingService extends BaseService<Booking> {
 
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
+    @InjectRepository(Promotion)
+    private readonly promotionRepository: Repository<Promotion>,
     @InjectRepository(UsedService)
     private readonly usedServiceRepository: Repository<UsedService>,
 
     private readonly bookedRoomSerivce: BookedRoomService,
     private readonly billService: BillService,
     private dataSource: DataSource,
+    private readonly mailerService: MailerService,
   ) {
     super(repository);
   }
@@ -52,7 +62,7 @@ export class BookingService extends BaseService<Booking> {
     const { check_in, check_out, type_room_id, quantity, payment_method } =
       payload;
 
-    const { rooms, type_room } = await this._prepare(
+    const { rooms, type_room, promotion } = await this._prepare(
       type_room_id,
       quantity,
       check_in,
@@ -65,6 +75,11 @@ export class BookingService extends BaseService<Booking> {
     booking.customer = user;
     booking.quantity = quantity;
     booking.user = { id: 1 } as User;
+
+    if (promotion) {
+      booking.discount = promotion?.discount ?? 0;
+      booking.promotion = promotion;
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -81,6 +96,36 @@ export class BookingService extends BaseService<Booking> {
         await this.roomRepository.update(room.id, { is_booking: true });
         await this.bookedRoomSerivce.create(booking, room);
       }
+
+      const amount = booking.booked_rooms.length * rooms[0].type_room.price;
+      const data = {
+        amount: amount.toLocaleString(),
+        total_amount: amount.toLocaleString(),
+        type_room: rooms[0].type_room.name,
+        price: rooms[0].type_room.price.toLocaleString(),
+        quantity: booking.booked_rooms.length,
+        discount: booking?.discount || 0,
+        service: false,
+        username: booking.customer.username,
+        createdAt: moment().format('hh:mm:ss, DD/MM/YYYY'),
+        order_id: booking.id,
+      };
+
+      const filepath = path.join(
+        process.cwd(),
+        'src/base/mailer/templates/invoice.html',
+      );
+
+      const file = fs.readFileSync(filepath, 'utf-8');
+
+      const template = Handlebars.compile(file.toString());
+      const html = template(data);
+
+      await this.mailerService.sendMail(
+        user.email,
+        'Bạn có hóa đơn cần thanh toán',
+        html,
+      );
       await queryRunner.commitTransaction();
       return url;
     } catch (e) {
@@ -139,6 +184,7 @@ export class BookingService extends BaseService<Booking> {
     booking.quantity = quantity;
     booking.customer = customer;
     booking.state = EBookingState.AdminInit;
+    booking.price = type_room.price;
 
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -169,6 +215,12 @@ export class BookingService extends BaseService<Booking> {
     const config: PaginateConfig<Booking> = {
       sortableColumns: ['updatedAt'],
       defaultSortBy: [['updatedAt', 'DESC']],
+      searchableColumns: [
+        'customer.username',
+        'customer.email',
+        'customer.phone',
+        'customer.cccd',
+      ],
     };
 
     const queryB = this.repository
@@ -204,6 +256,7 @@ export class BookingService extends BaseService<Booking> {
           service,
           quantity: service.quantity_used,
           name: service.name,
+          price: service.price,
         });
       }),
     );
@@ -225,7 +278,7 @@ export class BookingService extends BaseService<Booking> {
   }
 
   async checkout(id: number) {
-    const { booking } = await this._prepare_add_room(id);
+    const booking = await this._prepare_booking_relation(id);
     if (!booking.is_checked_in)
       throw new BadExcetion({ message: 'Phòng chưa checkin' });
 
@@ -235,11 +288,16 @@ export class BookingService extends BaseService<Booking> {
     booking.state = EBookingState.Done;
 
     await booking.save();
+
+    await Promise.all(
+      booking.booked_rooms.map((room) => this.checkoutRoom(room.room.id)),
+    );
+
     return true;
   }
 
   async cancel(id: number) {
-    const { booking } = await this._prepare_add_room(id);
+    const booking = await this._prepare_booking_relation(id);
     if (booking.state == EBookingState.Done)
       throw new BadExcetion({ message: 'Đơn đã hoàn thành' });
 
@@ -249,6 +307,11 @@ export class BookingService extends BaseService<Booking> {
     booking.state = EBookingState.Reject;
     booking.is_cancel = true;
     await booking.save();
+
+    await Promise.all(
+      booking.booked_rooms.map((room) => this.checkoutRoom(room.room.id)),
+    );
+
     return true;
   }
 
@@ -277,6 +340,9 @@ export class BookingService extends BaseService<Booking> {
           .andWhere('booking.is_checked_out = :is_checked_out', {
             is_checked_out: false,
           })
+          .andWhere('booking.is_cancel = :is_cancel', {
+            is_cancel: false,
+          })
           .andWhere(
             new Brackets((qb) => {
               qb.orWhere(':check_in > checkout', {
@@ -291,6 +357,61 @@ export class BookingService extends BaseService<Booking> {
         if (c > 0) return { type_room, c };
       }),
     );
+  }
+
+  async export(id: number) {
+    const booking: Booking = await this.repository
+      .createQueryBuilder('bk')
+      .leftJoinAndSelect('bk.booked_rooms', 'br')
+      .leftJoinAndSelect('br.room', 'room')
+      .leftJoinAndSelect('room.type_room', 'tr')
+      .leftJoinAndSelect('bk.customer', 'customer')
+      .leftJoinAndSelect('bk.user', 'user')
+      .leftJoinAndSelect('bk.used_services', 'us')
+      .leftJoinAndSelect('us.service', 'service')
+      .where('bk.id = :id', { id })
+      .getOne();
+
+    const room = booking.booked_rooms[0].room;
+    const services = booking.used_services.map((us) => ({
+      ...us,
+      price: us.service.price,
+    }));
+
+    const filepath = path.join(
+      process.cwd(),
+      'src/base/mailer/templates/invoice.html',
+    );
+
+    const amount = booking.booked_rooms.length * room.type_room.price;
+    let amount_service = 0;
+    for (const service of services) {
+      amount_service += service.price * service.quantity;
+    }
+
+    const data = {
+      amount: amount.toLocaleString(),
+      services: services.map((service) => ({
+        ...service,
+        price: service.price.toLocaleString(),
+        amout: (service.price * service.quantity).toLocaleString(),
+      })),
+      total_amount: (amount + amount_service).toLocaleString(),
+      type_room: room.type_room.name,
+      price: room.type_room.price.toLocaleString(),
+      quantity: booking.booked_rooms.length,
+      discount: booking?.discount || 0,
+      service: services.length > 0,
+      username: booking.customer.username,
+      createdAt: moment().format('hh:mm:ss, DD/MM/YYYY'),
+      order_id: booking.id,
+    };
+
+    const file = fs.readFileSync(filepath, 'utf-8');
+
+    const template = Handlebars.compile(file.toString());
+    const html = template(data);
+    return this.generatePdf(html);
   }
 
   async _prepare(
@@ -338,7 +459,13 @@ export class BookingService extends BaseService<Booking> {
       });
     }
 
-    return { rooms: rooms.slice(0, quantity), type_room };
+    let promotion: Promotion = await this.promotionRepository
+      .createQueryBuilder('promotion')
+      .where(':check_in BETWEEN start_date AND end_date', { check_in })
+      .getOne();
+
+    if (type_room.price * quantity < promotion.condition) promotion = null;
+    return { rooms: rooms.slice(0, quantity), type_room, promotion };
   }
 
   async _prepare_add_room(id: number, payloads?: AddServiceDto[]) {
@@ -358,5 +485,43 @@ export class BookingService extends BaseService<Booking> {
       }
 
     return { booking, services };
+  }
+
+  async _prepare_booking_relation(id: number) {
+    const booking: Booking = await this.repository
+      .createQueryBuilder('bk')
+      .leftJoinAndSelect('bk.booked_rooms', 'br')
+      .leftJoinAndSelect('br.room', 'room')
+      .where('bk.id = :id', { id })
+      .getOne();
+
+    if (!booking) throw new BadExcetion({ message: 'Không tồn tại đơn này' });
+
+    return booking;
+  }
+
+  async generatePdf(html: string) {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+    return pdfBuffer;
+  }
+
+  private async checkoutRoom(room_id: number) {
+    const room_booking = await this.repository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.booked_rooms', 'bk')
+      .leftJoinAndSelect('bk.room', 'room')
+      .where('booking.is_checked_out = false')
+      .andWhere('booking.is_cancel = false')
+      .andWhere('room.id = :room_id', { room_id })
+      .getOne();
+
+    if (room_booking) return;
+
+    const room = await this.roomRepository.findOne({ where: { id: room_id } });
+    return this.roomRepository.update(room.id, { is_booking: false });
   }
 }

@@ -68,24 +68,42 @@ export class TypeRoomService extends BaseService<TypeRoom> {
   async findAll(query: ListTypeRoomDto) {
     const config: PaginateConfig<TypeRoom> = {
       sortableColumns: ['id'],
+      searchableColumns: ['name'],
     };
 
     const queryB = this.repository
       .createQueryBuilder('type_room')
       .leftJoinAndSelect('type_room.rooms', 'room')
       .leftJoinAndSelect('room.booked_rooms', 'br')
-      .leftJoinAndSelect('br.booking', 'booking');
+      .leftJoinAndSelect('br.booking', 'booking')
+      .leftJoinAndSelect('type_room.feature_rooms', 'fr');
 
     return this.listWithPage(query, config, queryB);
   }
 
-  async findAllWithRelation(query: ListTypeRoomDto) {
-    const config: PaginateConfig<TypeRoom> = {
-      sortableColumns: ['id'],
-      relations: ['rooms'],
-    };
+  async findAllWithRelation() {
+    const [type_room, type_room_booking] = await Promise.all([
+      this.repository
+        .createQueryBuilder('type_room')
+        .leftJoinAndSelect('type_room.rooms', 'room')
+        .leftJoinAndSelect('room.booked_rooms', 'br')
+        .leftJoinAndSelect('br.booking', 'booking')
+        .leftJoinAndSelect('booking.customer', 'customer')
+        .where('room.is_booking = false')
+        .getMany(),
+      this.repository
+        .createQueryBuilder('type_room')
+        .leftJoinAndSelect('type_room.rooms', 'room')
+        .leftJoinAndSelect('room.booked_rooms', 'br')
+        .leftJoinAndSelect('br.booking', 'booking')
+        .leftJoinAndSelect('booking.customer', 'customer')
+        .where('room.is_booking = true')
+        .andWhere('booking.is_checked_out = false')
+        .andWhere('booking.is_cancel = false')
+        .getMany(),
+    ]);
 
-    return this.listWithPage(query, config);
+    return [...type_room, ...type_room_booking];
   }
 
   async findOne(identity: string) {

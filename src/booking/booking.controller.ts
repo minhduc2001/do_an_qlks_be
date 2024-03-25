@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import {
@@ -20,6 +22,9 @@ import { GetUser } from '@/auth/decorator/get-user.decorator';
 import { User } from '@/user/entities/user.entity';
 import { CheckRoomExitsDto } from './dto/check-room-exsits.dto';
 import { Public } from '@/auth/decorator/public.decorator';
+import { Response } from 'express';
+import * as moment from 'moment';
+import { BadExcetion, BadRequest } from '@/base/api/exception.reslover';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -46,6 +51,24 @@ export class BookingController {
   @Get()
   findAll(@Query() query: ListDto) {
     return this.bookingService.findAll(query);
+  }
+
+  @Get('export-bill/:id')
+  async export(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const pdfBuffer = await this.bookingService.export(+id);
+      const filename = `${moment().format('DDMMYYYY')}-invoice.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      throw new BadRequest({ message: 'Lỗi xuất file' });
+    }
   }
 
   @Get(':id')

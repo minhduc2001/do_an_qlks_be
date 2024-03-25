@@ -24,6 +24,7 @@ export class CustomerService extends BaseService<User> {
   async findAll(query: ListCustomerDto) {
     const config: PaginateConfig<User> = {
       sortableColumns: ['updatedAt'],
+      searchableColumns: ['username', 'email', 'cccd', 'phone'],
     };
 
     const queryB = this.repository

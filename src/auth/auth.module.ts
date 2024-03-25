@@ -19,7 +19,7 @@ import { config } from '@/config';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: config.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+      signOptions: { expiresIn: '100d' },
     }),
   ],
   providers: [

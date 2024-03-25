@@ -35,7 +35,7 @@ export class CreateTypeRoomDto extends UploadFilesDto {
   @IsOptional()
   @IsPositive()
   @ToNumber()
-  parent: string;
+  parent: number;
 
   @ApiPropertyOptional()
   @IsOptional()

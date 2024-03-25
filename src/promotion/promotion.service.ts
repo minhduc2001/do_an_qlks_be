@@ -63,6 +63,7 @@ export class PromotionService extends BaseService<Promotion> {
   async findAll(query: ListDto) {
     const config: PaginateConfig<Promotion> = {
       sortableColumns: ['updatedAt'],
+      searchableColumns: ['name'],
     };
 
     return this.listWithPage(query, config);

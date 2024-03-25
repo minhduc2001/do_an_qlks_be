@@ -12,6 +12,7 @@ import { BookedRoomService } from './booked_room.service';
 import { User } from '@/user/entities/user.entity';
 import { Service } from '@/services/entities/service.entity';
 import { UsedService } from '@/services/entities/used_service.entity';
+import { Promotion } from '@/promotion/entities/promotion.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UsedService } from '@/services/entities/used_service.entity';
       User,
       Service,
       UsedService,
+      Promotion,
     ]),
     BillModule,
   ],
