@@ -10,11 +10,25 @@ import { ERole } from '@/role/enum/roles.enum';
 const permissionGroup = [1];
 const data = [
   {
-    username: 'admin',
-    email: 'admin@admin.com',
+    username: 'Admin',
+    email: 'admin@hotel.com',
     password: '$2b$10$VU9fAWrF61xLIUkJKf5vBuBCh4RzdCFNekqLppKhk01/WwTx3BBFK',
     state: EState.Active,
     role: ERole.Admin,
+  },
+  {
+    username: 'Receptionist',
+    email: 're@hotel.com',
+    password: '$2b$10$VU9fAWrF61xLIUkJKf5vBuBCh4RzdCFNekqLppKhk01/WwTx3BBFK',
+    state: EState.Active,
+    role: ERole.Receptionist,
+  },
+  {
+    username: 'Accountant',
+    email: 'ac@hotel.com',
+    password: '$2b$10$VU9fAWrF61xLIUkJKf5vBuBCh4RzdCFNekqLppKhk01/WwTx3BBFK',
+    state: EState.Active,
+    role: ERole.Accountant,
   },
 ];
 @Injectable()

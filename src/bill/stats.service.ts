@@ -5,7 +5,7 @@ import { Service } from '@/services/entities/service.entity';
 import { User } from '@/user/entities/user.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getManager } from 'typeorm';
+import { Repository } from 'typeorm';
 import { EBookingState } from '@/booking/booking.constant';
 import * as moment from 'moment';
 import { Renderer } from 'xlsx-renderer';

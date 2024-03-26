@@ -13,6 +13,11 @@ export enum EPaymentState {
   Reject = 'reject',
 }
 
+export enum EPaymentFor {
+  Service = 'service',
+  Room = 'room',
+}
+
 export interface ICreateBill {
   booking: Booking;
   amount: number;

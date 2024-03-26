@@ -25,6 +25,7 @@ import { Public } from '@/auth/decorator/public.decorator';
 import { Response } from 'express';
 import * as moment from 'moment';
 import { BadExcetion, BadRequest } from '@/base/api/exception.reslover';
+import { IResponseVnpay } from './booking.constant';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -99,5 +100,13 @@ export class BookingController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.bookingService.remove(+id);
+  }
+
+  @Post('ipn-vnpay')
+  @Public()
+  async return(@Query() payload: IResponseVnpay, @Res() res: Response) {
+    const response = await this.bookingService.response_vnpay(payload);
+    if (response) return res.redirect('http://localhost:5174/thank/success');
+    res.redirect('http://localhost:5174/thank/error');
   }
 }

@@ -8,15 +8,26 @@ import { Repository } from 'typeorm';
 import { BaseService } from '@/base/service/base.service';
 import { VnpayService } from './vn-pay.service';
 import { generateUUID } from '@/base/helper/function.helper';
+import { MomoPayment } from 'momo-payment-api';
+import { config } from '@/base/config';
 
 @Injectable()
 export class BillService extends BaseService<Bill> {
+  private momoPayment: any;
+
   constructor(
     @InjectRepository(Bill)
     protected readonly repository: Repository<Bill>,
     private readonly vnpayService: VnpayService,
   ) {
     super(repository);
+
+    this.momoPayment = new MomoPayment(
+      config.MOMO.PARTNER_CODE,
+      config.MOMO.ACCESS_KEY,
+      config.MOMO.SECRET_KEY,
+      config.MOMO.ENVIROMENT,
+    );
   }
   async create(payload: ICreateBill) {
     const { booking, amount, payment_type } = payload;

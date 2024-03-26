@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -24,13 +25,17 @@ import { ListUserDto, UpdateUserDto, UploadAvatarDto } from './dtos/user.dto';
 import { Permissions } from '@/role/permission.decorator';
 import { PERMISSIONS } from '@shared/constants/permission.constant';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadService } from '@/base/multer/upload.service';
 
 @Controller('user')
 @ApiBearerAuth()
 @ApiTags('User')
 @UseGuards(JwtAuthGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @ApiConsumes()
   @Public()
@@ -44,5 +49,16 @@ export class UserController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() payload: UpdateUserDto) {
     return this.userService.update(+id, payload);
+  }
+
+  @Patch('avatar/:id')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const url = await this.uploadService.uploadFile(file);
+    return this.userService.uploadAvatar(+id, url);
   }
 }

@@ -19,7 +19,11 @@ import { BookedRoom } from './entities/booked_room.entity';
 import { BookedRoomService } from './booked_room.service';
 import { CheckRoomExitsDto } from './dto/check-room-exsits.dto';
 import { EProvider } from '@/user/user.constant';
-import { EBookingState } from './booking.constant';
+import {
+  EBookingState,
+  IResponseVnpay,
+  responseCode,
+} from './booking.constant';
 import { Service } from '@/services/entities/service.entity';
 import { UsedService } from '@/services/entities/used_service.entity';
 import Handlebars from 'handlebars';
@@ -29,6 +33,8 @@ import puppeteer from 'puppeteer';
 import * as moment from 'moment';
 import { Promotion } from '@/promotion/entities/promotion.entity';
 import { MailerService } from '@/base/mailer/mailer.service';
+import { Bill } from '@/bill/entities/bill.entity';
+import { EPaymentFor, EPaymentState, EPaymentType } from '@/bill/bill.constant';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -42,7 +48,8 @@ export class BookingService extends BaseService<Booking> {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
+    @InjectRepository(Bill)
+    private readonly billRepository: Repository<Bill>,
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
     @InjectRepository(Promotion)
@@ -75,6 +82,7 @@ export class BookingService extends BaseService<Booking> {
     booking.customer = user;
     booking.quantity = quantity;
     booking.user = { id: 1 } as User;
+    booking.state = EBookingState.Init;
 
     if (promotion) {
       booking.discount = promotion?.discount ?? 0;
@@ -97,13 +105,13 @@ export class BookingService extends BaseService<Booking> {
         await this.bookedRoomSerivce.create(booking, room);
       }
 
-      const amount = booking.booked_rooms.length * rooms[0].type_room.price;
+      const amount = booking.quantity * type_room.price;
       const data = {
         amount: amount.toLocaleString(),
         total_amount: amount.toLocaleString(),
-        type_room: rooms[0].type_room.name,
-        price: rooms[0].type_room.price.toLocaleString(),
-        quantity: booking.booked_rooms.length,
+        type_room: type_room.name,
+        price: type_room.price.toLocaleString(),
+        quantity: booking.quantity,
         discount: booking?.discount || 0,
         service: false,
         username: booking.customer.username,
@@ -279,6 +287,9 @@ export class BookingService extends BaseService<Booking> {
 
   async checkout(id: number) {
     const booking = await this._prepare_booking_relation(id);
+
+    const is_cms = booking.state === EBookingState.AdminInit;
+
     if (!booking.is_checked_in)
       throw new BadExcetion({ message: 'Phòng chưa checkin' });
 
@@ -288,6 +299,30 @@ export class BookingService extends BaseService<Booking> {
     booking.state = EBookingState.Done;
 
     await booking.save();
+
+    if (is_cms)
+      await Promise.all(
+        booking.bills.map((bill) =>
+          this.billRepository.update(bill.id, {
+            payment_state: EPaymentState.Fulfilled,
+            payment_date: new Date(),
+          }),
+        ),
+      );
+
+    if (booking.used_services) {
+      const bill = this.billRepository.create();
+      bill.payment_for = EPaymentFor.Service;
+      bill.amount = booking.used_services
+        .map((us) => us.service.price * us.quantity)
+        .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+      bill.payment_date = new Date();
+      bill.payment_type = EPaymentType.Cash;
+      bill.booking = booking;
+      bill.payment_state = EPaymentState.Fulfilled;
+
+      await bill.save();
+    }
 
     await Promise.all(
       booking.booked_rooms.map((room) => this.checkoutRoom(room.room.id)),
@@ -426,7 +461,7 @@ export class BookingService extends BaseService<Booking> {
 
     let [rooms, count]: [Room[], number] = await this.roomRepository
       .createQueryBuilder('room')
-      .where('room.typeRoomId = :id', { id: type_room.id })
+      .where('room.type_room_id = :id', { id: type_room.id })
       .andWhere('room.is_booking = :is_booking', { is_booking: false })
       .getManyAndCount();
 
@@ -435,7 +470,7 @@ export class BookingService extends BaseService<Booking> {
         .createQueryBuilder('room')
         .leftJoinAndSelect('room.booked_rooms', 'br')
         .leftJoinAndSelect('br.booking', 'booking')
-        .where('room.typeRoomId = :id', { id: type_room.id })
+        .where('room.type_room_id = :id', { id: type_room.id })
         .andWhere('room.is_booking = :is_booking', { is_booking: true })
         .andWhere('booking.is_checked_out = :is_checked_out', {
           is_checked_out: false,
@@ -455,7 +490,9 @@ export class BookingService extends BaseService<Booking> {
 
     if (count < quantity) {
       throw new BadExcetion({
-        message: `Chỉ còn ${count} phòng trống trong thời gian ${check_in} đến ${check_out}`,
+        message: `Chỉ còn ${count} phòng trống trong thời gian ${moment(
+          check_in,
+        ).format('DD/MM/YYYY')} đến ${moment(check_out).format('DD/MM/YYYY')}`,
       });
     }
 
@@ -464,8 +501,36 @@ export class BookingService extends BaseService<Booking> {
       .where(':check_in BETWEEN start_date AND end_date', { check_in })
       .getOne();
 
-    if (type_room.price * quantity < promotion.condition) promotion = null;
+    if (promotion && type_room.price * quantity < promotion.condition)
+      promotion = null;
     return { rooms: rooms.slice(0, quantity), type_room, promotion };
+  }
+
+  async response_vnpay(payload: IResponseVnpay) {
+    const bill = await this.billRepository.findOne({
+      where: { order_id: payload.vnp_TxnRef },
+      relations: { booking: true },
+    });
+    if (payload.vnp_ResponseCode == '00') {
+      bill.payment_state = EPaymentState.Fulfilled;
+      bill.payment_date = new Date();
+      await bill.save();
+
+      await this.repository.update(bill.booking.id, {
+        state: EBookingState.Success,
+      });
+
+      return true;
+    }
+
+    bill.payment_state = EPaymentState.Reject;
+    await bill.save();
+
+    await this.repository.update(bill.booking.id, {
+      state: EBookingState.Reject,
+    });
+
+    return false;
   }
 
   async _prepare_add_room(id: number, payloads?: AddServiceDto[]) {
@@ -492,6 +557,9 @@ export class BookingService extends BaseService<Booking> {
       .createQueryBuilder('bk')
       .leftJoinAndSelect('bk.booked_rooms', 'br')
       .leftJoinAndSelect('br.room', 'room')
+      .leftJoinAndSelect('bk.bills', 'bill')
+      .leftJoinAndSelect('bk.used_services', 'us')
+      .leftJoinAndSelect('us.service', 'service')
       .where('bk.id = :id', { id })
       .getOne();
 

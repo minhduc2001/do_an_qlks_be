@@ -45,6 +45,14 @@ export class ConfigService {
   VNP_URL = _process.env.VNP_URL;
   VNP_API = _process.env.VNP_API;
   VNP_RETURN_URL = _process.env.VNP_RETURN_URL;
+
+  // momo
+  MOMO = {
+    PARTNER_CODE: _process.env.PARTNER_CODE,
+    ACCESS_KEY: _process.env.ACCESS_KEY,
+    SECRET_KEY: _process.env.SECRET_KEY,
+    ENVIROMENT: _process.env.ENVIROMENT || 'enviroment',
+  };
 }
 
 export const config = new ConfigService();

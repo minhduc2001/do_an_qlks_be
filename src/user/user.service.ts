@@ -89,4 +89,9 @@ export class UserService extends BaseService<User> {
 
     return user.save();
   }
+
+  async uploadAvatar(id: number, file: string) {
+    await this.repository.update(id, { avatar: file });
+    return { avatar: file };
+  }
 }
