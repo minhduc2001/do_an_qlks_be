@@ -81,6 +81,7 @@ export class BookingService extends BaseService<Booking> {
     booking.checkout = check_out;
     booking.customer = user;
     booking.quantity = quantity;
+    booking.price = type_room.price;
     booking.user = { id: 1 } as User;
     booking.state = EBookingState.Init;
 
@@ -362,7 +363,7 @@ export class BookingService extends BaseService<Booking> {
       type_rooms.map(async (type_room) => {
         let c = await this.roomRepository
           .createQueryBuilder('room')
-          .where('room.typeRoomId = :id', { id: type_room.id })
+          .where('room.type_room_id = :id', { id: type_room.id })
           .andWhere('room.is_booking = :is_booking', { is_booking: false })
           .getCount();
 
@@ -370,7 +371,7 @@ export class BookingService extends BaseService<Booking> {
           .createQueryBuilder('room')
           .leftJoinAndSelect('room.booked_rooms', 'br')
           .leftJoinAndSelect('br.booking', 'booking')
-          .where('room.typeRoomId = :id', { id: type_room.id })
+          .where('room.type_room_id = :id', { id: type_room.id })
           .andWhere('room.is_booking = :is_booking', { is_booking: true })
           .andWhere('booking.is_checked_out = :is_checked_out', {
             is_checked_out: false,
