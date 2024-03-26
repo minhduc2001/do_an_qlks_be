@@ -1,5 +1,12 @@
 import { AbstractEntity } from '@/base/service/abstract-entity.service';
-import { Column, Entity, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { TypeRoom } from './type_room.entity';
 
 import { Booking } from '@/booking/entities/booking.entity';
@@ -14,6 +21,7 @@ export class Room extends AbstractEntity {
   is_booking: boolean;
 
   @ManyToOne(() => TypeRoom, (tr) => tr.rooms)
+  @JoinColumn({ name: 'type_room_id' })
   type_room: TypeRoom;
 
   @OneToMany(() => BookedRoom, (br) => br.room)

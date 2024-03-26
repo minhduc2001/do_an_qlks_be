@@ -69,3 +69,31 @@ export class BillService extends BaseService<Bill> {
     return `This action removes a #${id} bill`;
   }
 }
+
+// const months = Array.from({ length: 12 }, (_, index) => index + 1);
+// const revenueByMonth = await Promise.all(
+// months.map(async (month) => {
+// const result = await this.repository.query(
+// `
+// SELECT
+// $1::integer AS month,
+// COALESCE(SUM(b.total_amount), 0) AS totalRevenue
+// FROM
+// (
+// SELECT
+// EXTRACT(MONTH FROM checkin) AS month,
+// total_amount
+// FROM
+// booking
+// WHERE
+// EXTRACT(YEAR FROM checkin) = $2
+// ) AS b
+// WHERE
+// b.month = $3
+// `,
+// [month, year, month],
+// );
+//
+// return result[0];
+// }),
+// );

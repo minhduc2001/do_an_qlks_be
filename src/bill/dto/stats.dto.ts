@@ -1,17 +1,18 @@
+import { Trim } from '@/base/decorators/common.decorator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsDate, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class StatsRevenueTimeDto {
   @ApiProperty()
   @IsNotEmpty()
-  @IsDate()
-  @Transform(({ value }) => value && new Date(value))
-  start_date: Date;
+  @IsString()
+  @Trim()
+  startDate: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsDate()
-  @Transform(({ value }) => value && new Date(value))
-  end_date: Date;
+  @IsString()
+  @Trim()
+  endDate: string;
 }

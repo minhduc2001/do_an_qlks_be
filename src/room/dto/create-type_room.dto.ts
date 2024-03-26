@@ -39,9 +39,9 @@ export class CreateTypeRoomDto extends UploadFilesDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsPositive()
-  @ToNumber()
-  contains: number;
+  @IsString()
+  @Trim()
+  contains: string;
 
   @ApiPropertyOptional()
   @IsOptional()

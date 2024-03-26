@@ -15,10 +15,10 @@ export class BookedRoom extends BaseEntity {
   id: number;
 
   @ManyToOne(() => Room, (r) => r.booked_rooms)
-  @JoinColumn()
+  @JoinColumn({ name: 'room_id' })
   room: Room;
 
   @ManyToOne(() => Booking, (b) => b.booked_rooms)
-  @JoinColumn()
+  @JoinColumn({ name: 'booking_id' })
   booking: Booking;
 }

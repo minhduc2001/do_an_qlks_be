@@ -28,6 +28,7 @@ export class PromotionService extends BaseService<Promotion> {
       quantity,
       state,
       file,
+      condition,
     } = payload;
 
     const check = await this.repository
@@ -56,6 +57,7 @@ export class PromotionService extends BaseService<Promotion> {
     promotion.discount = discount;
     promotion.state = state;
     promotion.quantity = quantity;
+    promotion.condition = condition;
 
     return promotion.save();
   }
@@ -92,6 +94,7 @@ export class PromotionService extends BaseService<Promotion> {
       quantity,
       state,
       file,
+      condition,
     } = payload;
 
     const promotion = await this.repository.findOne({ where: { id } });
@@ -132,6 +135,7 @@ export class PromotionService extends BaseService<Promotion> {
     promotion.discount = discount;
     promotion.state = state;
     promotion.quantity = quantity;
+    promotion.condition = condition;
 
     return promotion.save();
   }

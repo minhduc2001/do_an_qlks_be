@@ -28,7 +28,7 @@ export class TypeRoom extends AbstractEntity {
   parent: number;
 
   @Column({ nullable: true })
-  contains: number;
+  contains: string;
 
   @Column({ nullable: true })
   area: number;
@@ -50,6 +50,5 @@ export class TypeRoom extends AbstractEntity {
   feature_rooms: FeatureRoom[];
 
   @OneToMany(() => Room, (room) => room.type_room)
-  @JoinColumn()
   rooms: Room[];
 }

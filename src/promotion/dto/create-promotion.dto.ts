@@ -58,6 +58,12 @@ export class CreatePromotionDto extends UploadFileDto {
   @ToNumber()
   quantity: number;
 
+  @ApiProperty({ example: 1 })
+  @IsNotEmpty()
+  @IsPositive()
+  @ToNumber()
+  condition: number;
+
   @ApiPropertyOptional({ enum: EState, example: EState.Active })
   @IsOptional()
   @IsEnum(EState)
