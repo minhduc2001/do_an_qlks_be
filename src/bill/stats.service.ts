@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { EBookingState } from '@/booking/booking.constant';
 import * as moment from 'moment';
 import { Renderer } from 'xlsx-renderer';
+import { BadExcetion } from '@/base/api/exception.reslover';
 
 @Injectable()
 export class StatsService {
@@ -214,6 +215,7 @@ export class StatsService {
       day: new Date().getDay(),
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
+      year_stats: year,
     };
 
     let total = 0;
@@ -231,6 +233,80 @@ export class StatsService {
       viewModel,
     );
     return result.xlsx.writeBuffer();
+  }
+
+  async exportExcel(startDate: string, endDate: string, user: User) {
+    const datas = await this.caculateBooking(startDate, endDate);
+
+    if (!datas?.length || datas.length == 0)
+      throw new BadExcetion({
+        message: 'Không có thống kê trong khoảng thời gian này',
+      });
+
+    const viewModel = {
+      username: user.username,
+      today: moment().format('hh:mm:ss, DD/MM/YYYY'),
+      day: new Date().getDate(),
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
+      start_date: moment(startDate).format('DD/MM/YYYY'),
+      end_date: moment(endDate).format('DD/MM/YYYY'),
+      bookings: datas.map((data, index) => ({
+        stt: index + 1,
+        ...data,
+        total_amount: data.total_amount.toLocaleString() + ' đ',
+      })),
+      total: datas
+        .map((data) => data.total_amount)
+        .reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+        .toLocaleString(),
+    };
+
+    const renderer = new Renderer();
+
+    const result = await renderer.renderFromFile(
+      './export-booking.xlsx',
+      viewModel,
+    );
+    return result.xlsx.writeBuffer();
+  }
+
+  async caculateBooking(startDate: string, endDate: string) {
+    const datas = await this.repository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.used_services', 'usedService')
+      .leftJoinAndSelect('booking.booked_rooms', 'bk')
+      .leftJoinAndSelect('bk.room', 'room')
+      .leftJoinAndSelect('room.type_room', 'type_room')
+      .leftJoinAndSelect('booking.customer', 'customer')
+      .leftJoinAndSelect('booking.user', 'user')
+      .where('booking.checkin BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .andWhere('booking.state = :state', { state: EBookingState.Done })
+      .getMany();
+
+    return datas.map((data) => ({
+      order_id: data.id,
+      // staff: data.user.username,
+      customer: data.customer.username,
+      // email: data.customer.email,
+      // cccd: data.customer.cccd,
+      // phone: data.customer.phone,
+      checkin: moment(data.checkin).format('DD/MM/YYYY'),
+      checkout: moment(data.checkout).format('DD/MM/YYYY'),
+      // type_room: data.booked_rooms[0].room.type_room.name,
+      // price: data.price,
+      // quantity: data.quantity,
+      // discount: data.discount,
+      total_amount:
+        data.price * data.quantity -
+        (data.price * data.quantity * data.discount) / 100 +
+        data.used_services
+          .map((us) => us.quantity * us.price)
+          .reduce((accumulator, currentValue) => accumulator + currentValue, 0),
+    }));
   }
 }
 

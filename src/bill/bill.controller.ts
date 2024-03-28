@@ -140,4 +140,33 @@ export class BillController {
       throw new BadRequest({ message: 'Lỗi xuất file' });
     }
   }
+
+  @Get('export-excel')
+  async exportExcel(
+    @Query() query: StatsRevenueTimeDto,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.statsService.exportExcel(
+        query.startDate,
+        query.endDate,
+        user,
+      );
+
+      const filename = `${moment().format('DD-MM-YYYY')}-export.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      res.send(buffer);
+    } catch (error) {
+      console.log(error);
+
+      throw new BadRequest({ message: 'Lỗi xuất file' });
+    }
+  }
 }

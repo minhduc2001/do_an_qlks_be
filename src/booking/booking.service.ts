@@ -35,6 +35,7 @@ import { Promotion } from '@/promotion/entities/promotion.entity';
 import { MailerService } from '@/base/mailer/mailer.service';
 import { Bill } from '@/bill/entities/bill.entity';
 import { EPaymentFor, EPaymentState, EPaymentType } from '@/bill/bill.constant';
+import { ListBookingDto } from './dto/list-booking.dto';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -220,7 +221,7 @@ export class BookingService extends BaseService<Booking> {
     }
   }
 
-  async findAll(query: ListDto) {
+  async findAll(query: ListBookingDto) {
     const config: PaginateConfig<Booking> = {
       sortableColumns: ['updatedAt'],
       defaultSortBy: [['updatedAt', 'DESC']],
@@ -241,6 +242,13 @@ export class BookingService extends BaseService<Booking> {
       .leftJoinAndSelect('bk.user', 'user')
       .leftJoinAndSelect('bk.used_services', 'us')
       .leftJoinAndSelect('us.service', 'service');
+
+    if (query.startDate && query.endDate) {
+      queryB.where('booking.checkin BETWEEN :startDate AND :endDate', {
+        startDate: query.startDate,
+        endDate: query.endDate,
+      });
+    }
 
     return this.listWithPage(query, config, queryB);
   }

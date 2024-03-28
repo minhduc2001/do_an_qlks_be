@@ -1,3 +1,4 @@
+import { ERole } from '@/role/enum/roles.enum';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
@@ -30,6 +31,10 @@ export class AuthService {
       throw new exc.BadRequest({
         message: 'email or password does not exists',
       });
+
+    if (user.role !== ERole.User && !user.active) {
+      throw new exc.BadExcetion({ message: 'Tài khoản đã bị khóa' });
+    }
 
     const payload: IJWTPayload = {
       sub: user.id,

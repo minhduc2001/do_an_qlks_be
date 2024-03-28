@@ -26,6 +26,11 @@ import { Permissions } from '@/role/permission.decorator';
 import { PERMISSIONS } from '@shared/constants/permission.constant';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from '@/base/multer/upload.service';
+import {
+  ActiveUserDto,
+  CmsCreateUserDto,
+  CmsUpdateUserDto,
+} from './dtos/create-user.dto';
 
 @Controller('user')
 @ApiBearerAuth()
@@ -37,18 +42,26 @@ export class UserController {
     private readonly uploadService: UploadService,
   ) {}
 
-  @ApiConsumes()
-  @Public()
   @Get()
-  // @Roles(ERole.Admin)
+  @Roles(ERole.Admin)
   // @Permissions(PERMISSIONS.DELETE_USER)
   getAllUser(@Query() query: ListUserDto) {
     return this.userService.getAllUser(query);
   }
 
+  @Post()
+  async cmsCreateUser(@Body() payload: CmsCreateUserDto) {
+    return this.userService.cmsCreateUser(payload);
+  }
+
+  @Put('active/:id')
+  async avtive(@Param('id') id: string, @Body() payload: ActiveUserDto) {
+    return this.userService.active(+id, payload);
+  }
+
   @Put(':id')
-  async update(@Param('id') id: string, @Body() payload: UpdateUserDto) {
-    return this.userService.update(+id, payload);
+  async update(@Param('id') id: string, @Body() payload: CmsUpdateUserDto) {
+    return this.userService.cmsUpdateUser(+id, payload);
   }
 
   @Patch('avatar/:id')

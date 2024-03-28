@@ -31,6 +31,9 @@ export class User extends AbstractEntity {
   @Column({ nullable: true })
   cccd: string;
 
+  @Column({ nullable: true, default: true })
+  active: boolean;
+
   @Column({
     type: 'enum',
     enum: EGender,

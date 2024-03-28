@@ -1,3 +1,5 @@
+import { ERole } from '@/role/enum/roles.enum';
+
 export interface IUserGetByUniqueKey {
   username?: string;
   email?: string;

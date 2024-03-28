@@ -26,6 +26,7 @@ import { Response } from 'express';
 import * as moment from 'moment';
 import { BadExcetion, BadRequest } from '@/base/api/exception.reslover';
 import { IResponseVnpay } from './booking.constant';
+import { ListBookingDto } from './dto/list-booking.dto';
 
 @ApiTags('Booking')
 @Controller('booking')
@@ -50,7 +51,7 @@ export class BookingController {
   }
 
   @Get()
-  findAll(@Query() query: ListDto) {
+  findAll(@Query() query: ListBookingDto) {
     return this.bookingService.findAll(query);
   }
 

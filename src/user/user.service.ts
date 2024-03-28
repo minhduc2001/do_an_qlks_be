@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 
 // BASE
 import * as exc from '@/base/api/exception.reslover';
@@ -17,6 +17,12 @@ import {
 import { ListUserDto, UpdateUserDto, UploadAvatarDto } from './dtos/user.dto';
 import { PaginateConfig } from '@base/service/paginate/paginate';
 import { EProvider } from './user.constant';
+import {
+  ActiveUserDto,
+  CmsCreateUserDto,
+  CmsUpdateUserDto,
+} from './dtos/create-user.dto';
+import { ERole } from '@/role/enum/roles.enum';
 
 @Injectable()
 export class UserService extends BaseService<User> {
@@ -55,13 +61,39 @@ export class UserService extends BaseService<User> {
     return await user.save();
   }
 
+  async cmsCreateUser(payload: CmsCreateUserDto) {
+    const user = this.repository.create(payload);
+    user.setPassword(payload.password);
+    user.provider = EProvider.Owner;
+
+    return user.save();
+  }
+
+  async cmsUpdateUser(id: number, payload: CmsUpdateUserDto) {
+    const user: User = await this.repository.findOne({ where: { id } });
+
+    if (!user)
+      throw new exc.BadExcetion({ message: 'Không tồn tại user này!' });
+
+    user.username = payload.username;
+    if (user.password !== payload.password) user.setPassword(payload.password);
+
+    user.role = payload.role;
+
+    return user.save();
+  }
+
   async getAllUser(query: ListUserDto) {
     const config: PaginateConfig<User> = {
       searchableColumns: ['username', 'email', 'cccd'],
       sortableColumns: ['updatedAt'],
     };
 
-    return this.listWithPage(query, config);
+    const queryB = this.repository
+      .createQueryBuilder('user')
+      .where({ role: In([ERole.Accountant, ERole.Receptionist]) });
+
+    return this.listWithPage(query, config, queryB);
   }
 
   async findByEmail(email: string) {
@@ -93,5 +125,20 @@ export class UserService extends BaseService<User> {
   async uploadAvatar(id: number, file: string) {
     await this.repository.update(id, { avatar: file });
     return { avatar: file };
+  }
+
+  async active(id: number, payload: ActiveUserDto) {
+    const user = await this.repository.findOne({
+      where: { id, provider: EProvider.Owner },
+    });
+
+    if (!user)
+      throw new exc.BadExcetion({ message: 'Không tồn tại tài khoản này' });
+
+    user.active = payload.active;
+    await user.save();
+
+    if (payload.active) return 'Chuyển trạng thái hoạt động thành công';
+    return 'Khóa tài khoản thành công';
   }
 }
