@@ -443,7 +443,8 @@ export class BookingService extends BaseService<Booking> {
       services: services.map((service) => ({
         ...service,
         price: service.price.toLocaleString(),
-        amout: (service.price * service.quantity).toLocaleString(),
+        amount: (service.price * service.quantity).toLocaleString(),
+        createdAt: moment(service.createdAt).format('hh:mm:ss, DD/MM/YYYY'),
       })),
       total_amount: (amount + amount_service).toLocaleString(),
       type_room: room.type_room.name,
