@@ -131,12 +131,11 @@ export class UserService extends BaseService<User> {
     const user = await this.repository.findOne({
       where: { id, provider: EProvider.Owner },
     });
-    console.log(payload);
 
     if (!user)
       throw new exc.BadExcetion({ message: 'Không tồn tại tài khoản này' });
 
-    user.active = payload.active === 'true';
+    user.active = payload.active.toString() == 'true';
     await user.save();
 
     if (payload.active) return 'Chuyển trạng thái hoạt động thành công';
