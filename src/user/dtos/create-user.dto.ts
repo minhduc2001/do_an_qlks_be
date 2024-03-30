@@ -35,7 +35,5 @@ export class CmsUpdateUserDto extends PartialType(CmsCreateUserDto) {}
 export class ActiveUserDto {
   @ApiProperty()
   @IsNotEmpty()
-  @IsBoolean()
-  @Transform(({ value }) => value && value?.toLowerCase?.() === 'true')
-  active: boolean;
+  active: string;
 }

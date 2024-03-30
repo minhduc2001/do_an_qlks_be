@@ -86,9 +86,9 @@ export class TypeRoomService extends BaseService<TypeRoom> {
       this.repository
         .createQueryBuilder('type_room')
         .leftJoinAndSelect('type_room.rooms', 'room')
-        .leftJoinAndSelect('room.booked_rooms', 'br')
-        .leftJoinAndSelect('br.booking', 'booking')
-        .leftJoinAndSelect('booking.customer', 'customer')
+        // .leftJoinAndSelect('room.booked_rooms', 'br')
+        // .leftJoinAndSelect('br.booking', 'booking')
+        // .leftJoinAndSelect('booking.customer', 'customer')
         .where('room.is_booking = false')
         .getMany(),
       this.repository

@@ -60,7 +60,12 @@ export class UserController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() payload: CmsUpdateUserDto) {
+  async update(@Param('id') id: string, @Body() payload: UpdateUserDto) {
+    return this.userService.update(+id, payload);
+  }
+
+  @Put(':id/cms')
+  async updateCms(@Param('id') id: string, @Body() payload: CmsUpdateUserDto) {
     return this.userService.cmsUpdateUser(+id, payload);
   }
 

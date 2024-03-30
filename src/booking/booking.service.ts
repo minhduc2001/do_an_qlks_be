@@ -140,6 +140,10 @@ export class BookingService extends BaseService<Booking> {
       return url;
     } catch (e) {
       await queryRunner.rollbackTransaction();
+      booking.state = EBookingState.Reject;
+      booking.is_cancel = true;
+
+      await booking.save();
       throw new BadExcetion({ message: e.message });
     } finally {
       await queryRunner.release();
