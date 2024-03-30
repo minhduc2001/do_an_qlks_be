@@ -166,7 +166,7 @@ export class BookingService extends BaseService<Booking> {
       address,
     } = payload;
 
-    const { rooms, type_room } = await this._prepare(
+    const { rooms, type_room, promotion } = await this._prepare(
       type_room_id,
       quantity,
       checkin,
@@ -200,6 +200,11 @@ export class BookingService extends BaseService<Booking> {
     booking.customer = customer;
     booking.state = EBookingState.AdminInit;
     booking.price = type_room.price;
+
+    if (promotion) {
+      booking.discount = promotion?.discount ?? 0;
+      booking.promotion = promotion;
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
 
