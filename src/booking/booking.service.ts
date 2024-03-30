@@ -437,7 +437,10 @@ export class BookingService extends BaseService<Booking> {
       'src/base/mailer/templates/invoice.html',
     );
 
-    const amount = booking.booked_rooms.length * room.type_room.price;
+    const amount =
+      booking.booked_rooms.length * room.type_room.price -
+      (booking.booked_rooms.length * room.type_room.price * booking.discount) /
+        100;
     let amount_service = 0;
     for (const service of services) {
       amount_service += service.price * service.quantity;
