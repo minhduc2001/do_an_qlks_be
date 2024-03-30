@@ -69,6 +69,8 @@ export class BookingController {
 
       res.send(pdfBuffer);
     } catch (error) {
+      console.log(error);
+
       throw new BadRequest({ message: 'Lỗi xuất file' });
     }
   }

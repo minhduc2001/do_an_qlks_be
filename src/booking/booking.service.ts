@@ -36,6 +36,7 @@ import { MailerService } from '@/base/mailer/mailer.service';
 import { Bill } from '@/bill/entities/bill.entity';
 import { EPaymentFor, EPaymentState, EPaymentType } from '@/bill/bill.constant';
 import { ListBookingDto } from './dto/list-booking.dto';
+import * as os from 'os';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -551,10 +552,10 @@ export class BookingService extends BaseService<Booking> {
     if (!booking) throw new BadExcetion({ message: 'Không tồn tại đơn này' });
 
     const services = [];
-    if (payloads)
+    if (payloads.length)
       for (const payload of payloads) {
         const service = await this.serviceRepository.findOne({
-          where: { id: payload.serivce_id },
+          where: { id: payload.service_id },
         });
 
         if (!service)
@@ -582,7 +583,7 @@ export class BookingService extends BaseService<Booking> {
   }
 
   async generatePdf(html: string) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({ executablePath: this.fixOs() });
     const page = await browser.newPage();
     await page.setContent(html);
     const pdfBuffer = await page.pdf({ format: 'A4' });
@@ -604,5 +605,17 @@ export class BookingService extends BaseService<Booking> {
 
     const room = await this.roomRepository.findOne({ where: { id: room_id } });
     return this.roomRepository.update(room.id, { is_booking: false });
+  }
+
+  fixOs() {
+    const osPlatform = os.platform();
+    console.log('Scraper running on platform: ', osPlatform);
+    let executablePath;
+    if (/^win/i.test(osPlatform)) {
+      executablePath = '';
+    } else if (/^linux/i.test(osPlatform)) {
+      executablePath = '';
+    }
+    return executablePath;
   }
 }

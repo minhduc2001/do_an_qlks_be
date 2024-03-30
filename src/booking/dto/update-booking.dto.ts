@@ -10,7 +10,7 @@ export class AddServiceDto {
   @IsNotEmpty()
   @IsPositive()
   @ToNumber()
-  serivce_id: number;
+  service_id: number;
 
   @ApiProperty()
   @IsNotEmpty()
