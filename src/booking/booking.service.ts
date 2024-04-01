@@ -37,6 +37,7 @@ import { Bill } from '@/bill/entities/bill.entity';
 import { EPaymentFor, EPaymentState, EPaymentType } from '@/bill/bill.constant';
 import { ListBookingDto } from './dto/list-booking.dto';
 import * as os from 'os';
+import * as html_to_pdf from 'html-pdf-node';
 
 @Injectable()
 export class BookingService extends BaseService<Booking> {
@@ -592,12 +593,18 @@ export class BookingService extends BaseService<Booking> {
   }
 
   async generatePdf(html: string) {
-    const browser = await puppeteer.launch({ executablePath: this.fixOs() });
-    const page = await browser.newPage();
-    await page.setContent(html);
-    const pdfBuffer = await page.pdf({ format: 'A4' });
-    await browser.close();
-    return pdfBuffer;
+    let options = { format: 'A4' };
+
+    let file = { content: html };
+
+    return html_to_pdf.generatePdf(file, options);
+
+    // const browser = await puppeteer.launch({ executablePath: this.fixOs() });
+    // const page = await browser.newPage();
+    // await page.setContent(html);
+    // const pdfBuffer = await page.pdf({ format: 'A4' });
+    // await browser.close();
+    // return pdfBuffer;
   }
 
   private async checkoutRoom(room_id: number) {

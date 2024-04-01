@@ -164,9 +164,7 @@ export class BillController {
 
       res.send(buffer);
     } catch (error) {
-      console.log(error);
-
-      throw new BadRequest({ message: 'Lỗi xuất file' });
+      throw new BadRequest({ message: 'Lỗi xuất file', errorCode: '666' });
     }
   }
 }

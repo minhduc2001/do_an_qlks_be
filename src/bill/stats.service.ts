@@ -272,6 +272,8 @@ export class StatsService {
   }
 
   async caculateBooking(startDate: string, endDate: string) {
+    console.log(startDate, endDate);
+
     const datas = await this.repository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.used_services', 'usedService')
@@ -281,8 +283,8 @@ export class StatsService {
       .leftJoinAndSelect('booking.customer', 'customer')
       .leftJoinAndSelect('booking.user', 'user')
       .where('booking.checkin BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
       })
       .andWhere('booking.state = :state', { state: EBookingState.Done })
       .getMany();

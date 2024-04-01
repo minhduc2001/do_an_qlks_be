@@ -72,7 +72,7 @@ export class Booking extends AbstractEntity {
   @JoinColumn()
   bills: Bill[];
 
-  @OneToOne(() => Promotion)
+  @ManyToOne(() => Promotion)
   @JoinColumn()
   promotion: Promotion;
 }
