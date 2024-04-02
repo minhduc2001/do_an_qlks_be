@@ -593,18 +593,12 @@ export class BookingService extends BaseService<Booking> {
   }
 
   async generatePdf(html: string) {
-    let options = { format: 'A4' };
-
-    let file = { content: html };
-
-    return html_to_pdf.generatePdf(file, options);
-
-    // const browser = await puppeteer.launch({ executablePath: this.fixOs() });
-    // const page = await browser.newPage();
-    // await page.setContent(html);
-    // const pdfBuffer = await page.pdf({ format: 'A4' });
-    // await browser.close();
-    // return pdfBuffer;
+    const browser = await puppeteer.launch(this.fixOs());
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+    return pdfBuffer;
   }
 
   private async checkoutRoom(room_id: number) {
@@ -626,12 +620,17 @@ export class BookingService extends BaseService<Booking> {
   fixOs() {
     const osPlatform = os.platform();
     console.log('Scraper running on platform: ', osPlatform);
-    let executablePath;
+
     if (/^win/i.test(osPlatform)) {
-      executablePath = '';
+      return {
+        executablePath:
+          'C:\\Users\\ADMIN\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+        userDataDir:
+          'C:\\Users\\ADMIN\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
+        ignoreDefaultArgs: ['--disable-extensions'],
+      };
     } else if (/^linux/i.test(osPlatform)) {
-      executablePath = '';
+      return {};
     }
-    return executablePath;
   }
 }
