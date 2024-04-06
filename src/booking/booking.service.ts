@@ -554,6 +554,7 @@ export class BookingService extends BaseService<Booking> {
       return true;
     }
 
+    if (bill.booking.is_checked_in) return false;
     bill.payment_state = EPaymentState.Reject;
     await bill.save();
 
