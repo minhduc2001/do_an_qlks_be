@@ -23,17 +23,18 @@ import { BillModule } from './bill/bill.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UploadFileModule } from './base/multer/upload-file.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { JwtStrategy } from './auth/strategies/jwt.strategy';
 
-const appModule = [AuthModule, UserModule, RoleModule, MailerModule];
+const appModule = [UserModule, RoleModule, AuthModule, MailerModule];
 const baseModule = [LoggerModule, UploadFileModule];
 
 @Module({
   imports: [
     CacheModule.register(),
+    TypeOrmModule.forRoot(dbConfig),
     EventEmitterModule.forRoot(),
     ...baseModule,
     ...appModule,
-    TypeOrmModule.forRoot(dbConfig),
     SeedersModule,
     BookingModule,
     RoomModule,

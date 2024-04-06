@@ -8,6 +8,10 @@ import { Brackets, Repository, WhereExpressionBuilder } from 'typeorm';
 import { BadExcetion } from '@/base/api/exception.reslover';
 import { ListDto } from '@/shared/dtos/common.dto';
 import { PaginateConfig } from '@/base/service/paginate/paginate';
+import { User } from '@/user/entities/user.entity';
+import { ERole } from '@/role/enum/roles.enum';
+import { EState } from '@/shared/enum/common.enum';
+import { ActivePromotionDto } from './dto/active-promotion.dto';
 
 @Injectable()
 export class PromotionService extends BaseService<Promotion> {
@@ -66,6 +70,16 @@ export class PromotionService extends BaseService<Promotion> {
     const config: PaginateConfig<Promotion> = {
       sortableColumns: ['updatedAt'],
       searchableColumns: ['name'],
+    };
+
+    return this.listWithPage(query, config);
+  }
+
+  async findAllForUser(query: ListDto) {
+    const config: PaginateConfig<Promotion> = {
+      sortableColumns: ['updatedAt'],
+      searchableColumns: ['name'],
+      where: { active: true },
     };
 
     return this.listWithPage(query, config);
@@ -140,7 +154,25 @@ export class PromotionService extends BaseService<Promotion> {
     return promotion.save();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} promotion`;
+  async remove(id: number) {
+    const promotion = await this.repository.findOne({ where: { id } });
+    if (!promotion)
+      throw new BadExcetion({ message: 'Không tồn tại khuyễn mãi này!' });
+
+    promotion.deletedAt = new Date();
+    return promotion.save();
+  }
+
+  async active(id: number, payload: ActivePromotionDto) {
+    const promotion = await this.repository.findOne({ where: { id } });
+    if (!promotion)
+      throw new BadExcetion({ message: 'Không tồn tại khuyễn mãi này!' });
+
+    promotion.active = payload.active.toString() == 'true';
+
+    await promotion.save();
+
+    if (payload.active.toString() == 'true') return 'Kích hoạt thành công';
+    return 'Hủy kích hoạt thành công';
   }
 }

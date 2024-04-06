@@ -8,6 +8,10 @@ import { Repository } from 'typeorm';
 import { ListServiceDto } from './dto/list-service.dto';
 import { PaginateConfig } from '@/base/service/paginate/paginate';
 import { BadExcetion } from '@/base/api/exception.reslover';
+import { ActivePromotionDto } from '@/promotion/dto/active-promotion.dto';
+import { User } from '@/user/entities/user.entity';
+import { ERole } from '@/role/enum/roles.enum';
+import { ActiveServiceDto } from './dto/active-service.dto';
 
 @Injectable()
 export class ServicesService extends BaseService<Service> {
@@ -31,8 +35,21 @@ export class ServicesService extends BaseService<Service> {
 
   async findAll(query: ListServiceDto) {
     const config: PaginateConfig<Service> = {
-      sortableColumns: ['id'],
+      sortableColumns: ['updatedAt'],
+      defaultSortBy: [['updatedAt', 'DESC']],
+
       searchableColumns: ['name'],
+    };
+    return this.listWithPage(query, config);
+  }
+
+  async findAllForUser(query: ListServiceDto) {
+    const config: PaginateConfig<Service> = {
+      sortableColumns: ['updatedAt'],
+      defaultSortBy: [['updatedAt', 'DESC']],
+
+      searchableColumns: ['name'],
+      where: { active: true },
     };
     return this.listWithPage(query, config);
   }
@@ -64,5 +81,17 @@ export class ServicesService extends BaseService<Service> {
 
   remove(id: number) {
     return `This action removes a #${id} service`;
+  }
+
+  async active(id: number, payload: ActiveServiceDto) {
+    const service: Service = await this.repository.findOne({ where: { id } });
+    if (!service)
+      throw new BadExcetion({ message: 'Không tồn tại dịch vụ này!' });
+
+    service.active = payload.active.toString() == 'true';
+
+    await service.save();
+    if (payload.active.toString() == 'true') return 'Kích hoạt thành công';
+    return 'Hủy kích hoạt thành công';
   }
 }

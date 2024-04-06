@@ -21,4 +21,7 @@ export class Service extends AbstractEntity {
 
   @OneToMany(() => UsedService, (us) => us.service)
   used_services: UsedService[];
+
+  @Column({ nullable: true, default: true })
+  active: boolean;
 }

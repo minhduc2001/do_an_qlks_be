@@ -10,6 +10,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -19,10 +20,15 @@ import { ListServiceDto } from './dto/list-service.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from '@/base/multer/upload.service';
 import { Public } from '@/auth/decorator/public.decorator';
+import { ActiveServiceDto } from './dto/active-service.dto';
+import { GetUser } from '@/auth/decorator/get-user.decorator';
+import { User } from '@/user/entities/user.entity';
+import { JwtAnonymousGuard } from '@/auth/guard/jwt-anonymous.guard';
 
 @ApiTags('Service')
 @Controller('services')
 @ApiBearerAuth()
+@UseGuards(JwtAnonymousGuard)
 export class ServicesController {
   constructor(
     private readonly servicesService: ServicesService,
@@ -41,9 +47,14 @@ export class ServicesController {
   }
 
   @Get()
-  @Public()
   findAll(@Query() query: ListServiceDto) {
     return this.servicesService.findAll(query);
+  }
+
+  @Get('find')
+  @Public()
+  findAllForUser(@Query() query: ListServiceDto) {
+    return this.servicesService.findAllForUser(query);
   }
 
   @Get(':id')
@@ -61,6 +72,11 @@ export class ServicesController {
   ) {
     const urlFile = file && (await this.uploadService.uploadFile(file));
     return this.servicesService.update(+id, { ...payload, file: urlFile });
+  }
+
+  @Patch(':id')
+  active(@Param('id') id: string, @Body() payload: ActiveServiceDto) {
+    return this.servicesService.active(+id, payload);
   }
 
   @Delete(':id')

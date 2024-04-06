@@ -562,7 +562,7 @@ export class BookingService extends BaseService<Booking> {
     if (!booking) throw new BadExcetion({ message: 'Không tồn tại đơn này' });
 
     const services = [];
-    if (payloads.length)
+    if (payloads?.length)
       for (const payload of payloads) {
         const service = await this.serviceRepository.findOne({
           where: { id: payload.service_id },

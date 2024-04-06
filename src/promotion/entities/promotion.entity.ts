@@ -31,6 +31,9 @@ export class Promotion extends AbstractEntity {
   @Column({ default: 0 })
   quantity: number;
 
+  @Column({ default: true, nullable: true })
+  active: boolean;
+
   @Column({ type: 'enum', enum: EState, default: EState.Active })
   state: EState;
 }

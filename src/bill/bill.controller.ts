@@ -14,7 +14,7 @@ import { BillService } from './bill.service';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Roles } from '@/role/roles.decorator';
+
 import { ERole } from '@/role/enum/roles.enum';
 import { StatsService } from './stats.service';
 import { StatsRevenueTimeDto } from './dto/stats.dto';
@@ -25,6 +25,8 @@ import { User } from '@/user/entities/user.entity';
 import { Response } from 'express';
 import * as moment from 'moment';
 import { BadRequest } from '@/base/api/exception.reslover';
+import { Auth } from '@/auth/decorator/auth.decorator';
+import { Roles } from '@/role/roles.decorator';
 
 @Controller('bill')
 @ApiTags('Bill')

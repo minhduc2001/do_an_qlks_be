@@ -165,36 +165,63 @@ export class TypeRoomService extends BaseService<TypeRoom> {
     if (!tr) throw new BadExcetion({ message: 'phong khong ton tai' });
 
     const tr_name_id = tr.rooms.map((r) => r.id);
-
     const newRoom = [];
-    const newRoomDel = [];
-
-    for (const r of payload.room_names) {
-      if (!r.id)
-        newRoom.push(this.roomRepository.create({ ...r, type_room: tr }));
-      if (tr_name_id.includes(r.id))
-        newRoom.push(
-          await this.roomRepository.findOne({ where: { id: r.id } }),
-        );
-      else newRoomDel.push(r.id);
-    }
+    let duplicate;
 
     const queryRunner = this.dataSource.createQueryRunner();
     queryRunner.startTransaction();
     try {
-      if (newRoomDel.length)
+      for (const r of payload.room_names) {
+        duplicate = r.name;
+        if (!r.id) {
+          newRoom.push(
+            await queryRunner.manager.save(Room, { ...r, type_room: tr }),
+          );
+          continue;
+        }
+
+        const index = tr_name_id.indexOf(r.id);
+
+        if (index !== -1) {
+          const temp = await this.roomRepository.findOne({
+            where: { id: r.id },
+          });
+
+          newRoom.push(
+            temp.name === r.name
+              ? temp
+              : await queryRunner.manager.save(Room, {
+                  ...temp,
+                  name: r.name,
+                }),
+          );
+
+          tr_name_id.splice(index, 1);
+        }
+      }
+
+      if (tr_name_id.length)
         await Promise.all(
-          newRoomDel.map((r) =>
-            queryRunner.query('DELETE FROM room where room.id = $1', [r]),
+          tr_name_id.map(
+            async (r_id) =>
+              await queryRunner.manager.delete(Room, { id: r_id }),
           ),
         );
-      await Promise.all(newRoom.map((r) => r.save()));
+
+      // await queryRunner.manager.update(TypeRoom, tr.id, { rooms: newRoom });
+      // await Promise.all(newRoom.map((r) => r.save()));
 
       await queryRunner.commitTransaction();
       return true;
     } catch (e) {
       await queryRunner.rollbackTransaction();
-      throw new BadExcetion({ message: e.message });
+      console.log(e);
+
+      throw new BadExcetion({
+        message: e.message.includes('duplicate key')
+          ? `Phòng ${duplicate} bị trùng`
+          : e.message,
+      });
     } finally {
       await queryRunner.release();
     }
@@ -217,8 +244,6 @@ export class TypeRoomService extends BaseService<TypeRoom> {
   }
 
   private _handleImage(images: string[], files: string[]) {
-    console.log(images);
-
     const newImages = images || [];
     if (Array.isArray(files)) newImages.push(...files);
     return newImages;
