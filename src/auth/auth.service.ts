@@ -28,7 +28,7 @@ export class AuthService {
     const user = await this.userService.findByEmail(email);
 
     if (!user || !user.comparePassword(password))
-      throw new exc.BadRequest({
+      throw new exc.BadExcetion({
         message: 'email or password does not exists',
       });
 
@@ -51,7 +51,8 @@ export class AuthService {
   async register(dto: RegisterDto) {
     let isExists = await this.userService.findByEmail(dto.email);
 
-    if (isExists) throw new exc.BadRequest({ message: 'email already is use' });
+    if (isExists)
+      throw new exc.BadExcetion({ message: 'email already is use' });
 
     const user = await this.userService.createUser(dto);
 

@@ -25,7 +25,7 @@ import { UploadFileModule } from './base/multer/upload-file.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 
-const appModule = [UserModule, RoleModule, AuthModule, MailerModule];
+const appModule = [AuthModule, UserModule, RoleModule, MailerModule];
 const baseModule = [LoggerModule, UploadFileModule];
 
 @Module({

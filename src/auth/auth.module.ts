@@ -16,7 +16,8 @@ import { config } from '@/config';
 @Module({
   imports: [
     UserModule,
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+
     JwtModule.register({
       secret: config.JWT_SECRET,
       signOptions: { expiresIn: '100d' },
