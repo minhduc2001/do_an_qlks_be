@@ -175,4 +175,11 @@ export class PromotionService extends BaseService<Promotion> {
     if (payload.active.toString() == 'true') return 'Kích hoạt thành công';
     return 'Hủy kích hoạt thành công';
   }
+
+  async checkPromotion(checkin: Date) {
+    return this.repository
+      .createQueryBuilder('promotion')
+      .where(':checkin BETWEEN start_date AND end_date', { checkin })
+      .getOne();
+  }
 }

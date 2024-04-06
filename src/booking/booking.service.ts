@@ -98,9 +98,13 @@ export class BookingService extends BaseService<Booking> {
     try {
       queryRunner.startTransaction();
       await booking.save();
+      const amount =
+        booking.quantity * type_room.price -
+        (booking.quantity * type_room.price * booking.discount) / 100;
+
       const url = await this.billService.create({
         booking,
-        amount: quantity * type_room.price,
+        amount,
         payment_type: payment_method,
       });
 
@@ -109,7 +113,6 @@ export class BookingService extends BaseService<Booking> {
         await this.bookedRoomSerivce.create(booking, room);
       }
 
-      const amount = booking.quantity * type_room.price;
       const data = {
         amount: amount.toLocaleString(),
         total_amount: amount.toLocaleString(),
@@ -212,9 +215,13 @@ export class BookingService extends BaseService<Booking> {
     try {
       queryRunner.startTransaction();
       await booking.save();
+      const amount =
+        booking.quantity * type_room.price -
+        (booking.quantity * type_room.price * booking.discount) / 100;
+
       const url = await this.billService.create({
         booking,
-        amount: quantity * type_room.price,
+        amount,
         payment_type: payment_type,
       });
 

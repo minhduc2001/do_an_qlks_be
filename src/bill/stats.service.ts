@@ -32,9 +32,9 @@ export class StatsService {
         .where('booking.state = :bookingStates', {
           bookingStates: EBookingState.Done,
         })
-        .andWhere('booking.checkin BETWEEN :startDate AND :endDate', {
-          startDate,
-          endDate,
+        .andWhere('DATE(booking.checkin) BETWEEN :startDate AND :endDate', {
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
         })
         .select('service.id', 'serviceId')
         .addSelect('usedService.name', 'serviceName')
@@ -77,9 +77,9 @@ export class StatsService {
         .where('booking.state = :bookingStates', {
           bookingStates: EBookingState.Done,
         })
-        .andWhere('booking.checkin BETWEEN :startDate AND :endDate', {
-          startDate,
-          endDate,
+        .andWhere('DATE(booking.checkin) BETWEEN :startDate AND :endDate', {
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
         })
         .select('typeRoom.id', 'typeRoomId')
         .addSelect('typeRoom.name', 'typeRoomName')
@@ -113,29 +113,26 @@ export class StatsService {
     const months = Array.from({ length: 12 }, (_, index) => index + 1);
     const response: { type: string; value: number }[] = [];
 
-    await Promise.all(
-      months.map(async (month) => {
-        const prepare = { type: month.toString(), value: 0 };
-        const data = await this.repository
-          .createQueryBuilder('booking')
-          .leftJoinAndSelect('booking.used_services', 'usedService')
-          .where("date_part('year', booking.checkin) = :year", { year })
-          .andWhere("date_part('month', booking.checkin) = :month", { month })
-          .andWhere('booking.state = :state', { state: EBookingState.Done })
-          .select("date_part('month', booking.checkin)", 'month')
-          .addSelect(
-            'SUM(booking.price * booking.quantity - (booking.price * booking.quantity * booking.discount / 100) + usedService.quantity * usedService.price)',
-            'totalRevenue',
-          )
-          .groupBy("date_part('month', booking.checkin)")
-          .getRawMany();
+    for (const month of months) {
+      const prepare = { type: month.toString(), value: 0 };
+      const data = await this.repository
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.used_services', 'usedService')
+        .where("date_part('year', booking.checkin) = :year", { year })
+        .andWhere("date_part('month', booking.checkin) = :month", { month })
+        .andWhere('booking.state = :state', { state: EBookingState.Done })
+        .select("date_part('month', booking.checkin)", 'month')
+        .addSelect(
+          'SUM(booking.price * booking.quantity - (booking.price * booking.quantity * booking.discount / 100) + usedService.quantity * usedService.price)',
+          'totalRevenue',
+        )
+        .groupBy("date_part('month', booking.checkin)")
+        .getRawMany();
 
-        if (data[0]?.month) prepare.value = Number(data[0].totalRevenue);
+      if (data[0]?.month) prepare.value = Number(data[0].totalRevenue);
 
-        response.push(prepare);
-      }),
-    );
-
+      response.push(prepare);
+    }
     return response.sort((a, b) => Number(a.type) - Number(b.type));
   }
 
@@ -271,9 +268,25 @@ export class StatsService {
     return result.xlsx.writeBuffer();
   }
 
-  async caculateBooking(startDate: string, endDate: string) {
-    console.log(startDate, endDate);
+  async revenueStatsBooking(startDate: string, endDate: string) {
+    const dates = this._getDates(startDate, endDate);
 
+    const response: { name: string; value: number }[] = [];
+
+    for (const date of dates) {
+      const count = await this.repository
+        .createQueryBuilder('booking')
+        .where('DATE(booking.checkout) = :date', { date: new Date(date) })
+        .andWhere('booking.state = :state', { state: EBookingState.Done })
+        .getCount();
+
+      response.push({ name: moment(date).format('DD/MM/YYYY'), value: count });
+    }
+
+    return response;
+  }
+
+  async caculateBooking(startDate: string, endDate: string) {
     const datas = await this.repository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.used_services', 'usedService')
@@ -282,7 +295,7 @@ export class StatsService {
       .leftJoinAndSelect('room.type_room', 'type_room')
       .leftJoinAndSelect('booking.customer', 'customer')
       .leftJoinAndSelect('booking.user', 'user')
-      .where('booking.checkin BETWEEN :startDate AND :endDate', {
+      .where('DATE(booking.checkin) BETWEEN :startDate AND :endDate', {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
       })
@@ -309,6 +322,18 @@ export class StatsService {
           .map((us) => us.quantity * us.price)
           .reduce((accumulator, currentValue) => accumulator + currentValue, 0),
     }));
+  }
+
+  private _getDates(startDate: string, endDate: string) {
+    let dateArray = [];
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= new Date(endDate)) {
+      dateArray.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dateArray;
   }
 }
 

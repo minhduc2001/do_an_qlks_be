@@ -50,6 +50,15 @@ export class BillController {
     return this.statsService.roomStats(query.startDate, query.endDate);
   }
 
+  @Get('stats-revenue-booking')
+  @Roles(ERole.Admin, ERole.Accountant)
+  revenueBookingStats(@Query() query: StatsRevenueTimeDto) {
+    return this.statsService.revenueStatsBooking(
+      query.startDate,
+      query.endDate,
+    );
+  }
+
   @Get('revenue')
   @Roles(ERole.Admin, ERole.Accountant)
   revenue(@Query('year') year: string) {

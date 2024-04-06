@@ -57,6 +57,12 @@ export class PromotionController {
     return this.promotionService.findAllForUser(query);
   }
 
+  @Get('check/:checkin')
+  @Public()
+  getPromotion(@Param('checkin') checkin: string) {
+    return this.promotionService.checkPromotion(new Date(checkin));
+  }
+
   @Get(':identity')
   @Public()
   findOne(@Param('identity') identity: string) {
