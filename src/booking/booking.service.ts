@@ -99,8 +99,14 @@ export class BookingService extends BaseService<Booking> {
       queryRunner.startTransaction();
       await booking.save();
       const amount =
-        booking.quantity * type_room.price -
-        (booking.quantity * type_room.price * booking.discount) / 100;
+        booking.quantity *
+          type_room.price *
+          this._daysDiff(check_in, check_out) -
+        (booking.quantity *
+          type_room.price *
+          this._daysDiff(check_in, check_out) *
+          booking.discount) /
+          100;
 
       const url = await this.billService.create({
         booking,
@@ -216,8 +222,12 @@ export class BookingService extends BaseService<Booking> {
       queryRunner.startTransaction();
       await booking.save();
       const amount =
-        booking.quantity * type_room.price -
-        (booking.quantity * type_room.price * booking.discount) / 100;
+        booking.quantity * type_room.price * this._daysDiff(checkin, checkout) -
+        (booking.quantity *
+          type_room.price *
+          this._daysDiff(checkin, checkout) *
+          booking.discount) /
+          100;
 
       const url = await this.billService.create({
         booking,
@@ -623,6 +633,17 @@ export class BookingService extends BaseService<Booking> {
 
     const room = await this.roomRepository.findOne({ where: { id: room_id } });
     return this.roomRepository.update(room.id, { is_booking: false });
+  }
+
+  private _daysDiff(d1: Date, d2: Date) {
+    const date1: Date = new Date(d1);
+    const date2: Date = new Date(d2);
+
+    // Tính số mili giây giữa hai ngày
+    const timeDiff: number = Math.abs(date2.getTime() - date1.getTime());
+
+    // Chuyển đổi từ mili giây sang số ngày
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   }
 
   fixOs() {

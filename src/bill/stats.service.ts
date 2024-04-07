@@ -32,7 +32,7 @@ export class StatsService {
         .where('booking.state = :bookingStates', {
           bookingStates: EBookingState.Done,
         })
-        .andWhere('DATE(booking.checkin) BETWEEN :startDate AND :endDate', {
+        .andWhere('DATE(booking.checkout) BETWEEN :startDate AND :endDate', {
           startDate: new Date(startDate),
           endDate: new Date(endDate),
         })
@@ -77,14 +77,14 @@ export class StatsService {
         .where('booking.state = :bookingStates', {
           bookingStates: EBookingState.Done,
         })
-        .andWhere('DATE(booking.checkin) BETWEEN :startDate AND :endDate', {
+        .andWhere('DATE(booking.checkout) BETWEEN :startDate AND :endDate', {
           startDate: new Date(startDate),
           endDate: new Date(endDate),
         })
         .select('typeRoom.id', 'typeRoomId')
         .addSelect('typeRoom.name', 'typeRoomName')
         .addSelect(
-          'SUM(booking.price * booking.quantity - (booking.price * booking.quantity * booking.discount / 100))',
+          'SUM(booking.price * booking.quantity * (DATE(booking.checkout) - DATE(booking.checkin)) - (booking.price * booking.quantity * (DATE(booking.checkout) - DATE(booking.checkin)) * booking.discount / 100))',
           'totalRevenue',
         )
         .addSelect('SUM(booking.quantity)', 'totalQuantity')
@@ -115,21 +115,71 @@ export class StatsService {
 
     for (const month of months) {
       const prepare = { type: month.toString(), value: 0 };
+      // console.log(month);
+
+      // const data = await this.repository
+      //   .createQueryBuilder('booking')
+      //   .distinct()
+      //   .leftJoinAndSelect('booking.used_services', 'usedService')
+      //   .where('EXTRACT(YEAR FROM booking.checkout) = :year', { year })
+      //   .andWhere('EXTRACT(MONTH FROM booking.checkout) = :month', { month })
+      //   .andWhere('booking.is_checked_out = true')
+      //   .select('bm.month', 'SUM(booking.price) AS totalRevenue')
+      //   .from(
+      //     (subquery) =>
+      //       subquery
+      //         .select('booking.id', 'booking_id')
+      //         .addSelect('EXTRACT(MONTH FROM booking.checkout) AS month')
+      //         .from(Booking, 'booking')
+      //         .where('EXTRACT(YEAR FROM booking.checkout) = :year', { year })
+      //         .andWhere('EXTRACT(MONTH FROM booking.checkout) = :month', {
+      //           month,
+      //         })
+      //         .andWhere('booking.is_checked_out = true')
+      //         .groupBy('EXTRACT(MONTH FROM booking.checkout), booking.id'),
+      //     'bm',
+      //   )
+      //   .getRawMany();
+
       const data = await this.repository
         .createQueryBuilder('booking')
         .leftJoinAndSelect('booking.used_services', 'usedService')
-        .where("date_part('year', booking.checkin) = :year", { year })
-        .andWhere("date_part('month', booking.checkin) = :month", { month })
-        .andWhere('booking.state = :state', { state: EBookingState.Done })
-        .select("date_part('month', booking.checkin)", 'month')
-        .addSelect(
-          'SUM(booking.price * booking.quantity - (booking.price * booking.quantity * booking.discount / 100) + usedService.quantity * usedService.price)',
-          'totalRevenue',
-        )
-        .groupBy("date_part('month', booking.checkin)")
-        .getRawMany();
+        .where('EXTRACT(YEAR FROM booking.checkout) = :year', { year })
+        .andWhere('EXTRACT(MONTH FROM booking.checkout) = :month', { month })
+        .andWhere('booking.is_checked_out = true')
+        .getMany();
 
-      if (data[0]?.month) prepare.value = Number(data[0].totalRevenue);
+      let total_month = 0;
+      for (const d of data) {
+        const used_services = d.used_services;
+        let total = 0;
+        for (const used_service of used_services) {
+          total += used_service.price * used_service.quantity;
+        }
+
+        total +=
+          d.price * d.quantity * this._daysDiff(d.checkin, d.checkout) -
+          (d.price *
+            d.quantity *
+            this._daysDiff(d.checkin, d.checkout) *
+            d.discount) /
+            100;
+
+        total_month += total;
+      }
+
+      // const data1 = await this.repository
+      //   .createQueryBuilder('booking')
+      //   .leftJoinAndSelect('booking.used_services', 'usedService')
+      //   .where('EXTRACT(YEAR FROM booking.checkout) = :year', { year })
+      //   .andWhere('EXTRACT(MONTH FROM booking.checkout) = :month', { month })
+      //   .andWhere('booking.is_checked_out = true')
+      //   .select('EXTRACT(MONTH FROM booking.checkout)', 'month')
+      //   .groupBy('EXTRACT(MONTH FROM booking.checkout)')
+      //   .getRawMany();
+      // console.log(data1);
+
+      prepare.value = Number(total_month) ?? 0;
 
       response.push(prepare);
     }
@@ -334,6 +384,17 @@ export class StatsService {
     }
 
     return dateArray;
+  }
+
+  private _daysDiff(d1: Date, d2: Date) {
+    const date1: Date = new Date(d1);
+    const date2: Date = new Date(d2);
+
+    // Tính số mili giây giữa hai ngày
+    const timeDiff: number = Math.abs(date2.getTime() - date1.getTime());
+
+    // Chuyển đổi từ mili giây sang số ngày
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   }
 }
 
